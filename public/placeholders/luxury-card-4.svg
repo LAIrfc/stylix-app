@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img" aria-label="Luxury card placeholder four">
+  <defs>
+    <linearGradient id="b4" x1="0" y1="0" x2="1" y2="0.9">
+      <stop offset="0%" stop-color="#070709"/>
+      <stop offset="100%" stop-color="#11131b"/>
+    </linearGradient>
+    <radialGradient id="g4" cx="32%" cy="30%" r="58%">
+      <stop offset="0%" stop-color="#d2b06d" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#d2b06d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#b4)"/>
+  <rect width="900" height="1200" fill="url(#g4)"/>
+  <g fill="none" stroke="#c9a962" stroke-opacity="0.36">
+    <ellipse cx="420" cy="600" rx="260" ry="130" stroke-width="4.6"/>
+    <ellipse cx="460" cy="600" rx="210" ry="100" stroke-width="2.6"/>
+    <ellipse cx="500" cy="600" rx="160" ry="74" stroke-width="1.8"/>
+  </g>
+</svg>

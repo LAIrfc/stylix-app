@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #0a0a0a;
+  --ivory: #f5f0e8;
+  --gold: #c9a962;
+  --gold-dim: rgba(201, 169, 98, 0.35);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-ink-deep text-ivory antialiased;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+::selection {
+  @apply bg-gold/30 text-ivory;
+}
+
+@layer utilities {
+  .text-gradient-gold {
+    @apply bg-gold-rose bg-clip-text text-transparent;
+  }
+  .border-hairline {
+    border-width: 1px;
+    @apply border-ivory/10;
+  }
+}

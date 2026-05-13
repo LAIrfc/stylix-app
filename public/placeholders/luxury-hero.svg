@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1500" role="img" aria-labelledby="title desc">
+  <title id="title">Luxury hero placeholder</title>
+  <desc id="desc">Black and gold abstract luxury placeholder image.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b0b0f" />
+      <stop offset="50%" stop-color="#101218" />
+      <stop offset="100%" stop-color="#050507" />
+    </linearGradient>
+    <radialGradient id="glowTop" cx="78%" cy="14%" r="45%">
+      <stop offset="0%" stop-color="#c9a962" stop-opacity="0.42" />
+      <stop offset="100%" stop-color="#c9a962" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowSide" cx="20%" cy="86%" r="38%">
+      <stop offset="0%" stop-color="#b9903f" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#b9903f" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="1500" fill="url(#bg)" />
+  <rect width="1200" height="1500" fill="url(#glowTop)" />
+  <rect width="1200" height="1500" fill="url(#glowSide)" />
+  <g fill="none" stroke="#c9a962" stroke-opacity="0.32">
+    <path d="M120 1380c180-260 390-420 640-420 130 0 230 28 320 70" stroke-width="2.2" />
+    <path d="M130 1240c210-220 420-330 620-330 170 0 300 52 410 124" stroke-width="1.4" />
+    <path d="M180 1120c220-150 430-210 620-210 150 0 280 32 380 82" stroke-width="1" />
+  </g>
+</svg>

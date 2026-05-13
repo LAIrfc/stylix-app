@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Aphrodite Heart Ring">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b0b10" />
+      <stop offset="100%" stop-color="#1a1720" />
+    </linearGradient>
+  </defs>
+  <rect width="900" height="900" fill="url(#bg3)" />
+  <path d="M450 320c-42-62-148-56-177 26-22 62 12 127 66 173 35 31 78 63 111 86 33-23 76-55 111-86 54-46 88-111 66-173-29-82-135-88-177-26z" fill="#d7b46c" fill-opacity="0.86" />
+  <ellipse cx="450" cy="585" rx="148" ry="62" fill="none" stroke="#b2853f" stroke-opacity="0.45" stroke-width="14" />
+</svg>

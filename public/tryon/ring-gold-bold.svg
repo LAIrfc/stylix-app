@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Transparent background — suitable for AR overlay -->
+  <defs>
+    <radialGradient id="goldBold" cx="38%" cy="32%" r="58%">
+      <stop offset="0%" stop-color="#f5e070"/>
+      <stop offset="35%" stop-color="#c9a040"/>
+      <stop offset="100%" stop-color="#6b4510"/>
+    </radialGradient>
+    <radialGradient id="goldBold2" cx="62%" cy="68%" r="45%">
+      <stop offset="0%" stop-color="#e8c050" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#6b4510" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Wide bold band -->
+  <circle cx="100" cy="100" r="76" fill="url(#goldBold)" filter="url(#glow)"/>
+  <circle cx="100" cy="100" r="76" fill="url(#goldBold2)"/>
+  <!-- Inner cutout — narrower = thicker band -->
+  <circle cx="100" cy="100" r="54" fill="black"/>
+  <!-- Engraved line detail on outer face -->
+  <circle cx="100" cy="100" r="68" fill="none" stroke="#f0d060" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="100" cy="100" r="62" fill="none" stroke="#7a5010" stroke-width="1" opacity="0.3"/>
+  <!-- Highlight -->
+  <path d="M 46 68 A 58 58 0 0 1 100 42" stroke="#fffad0" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+  <!-- Shadow -->
+  <path d="M 154 132 A 58 58 0 0 1 100 158" stroke="#3a2005" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+</svg>

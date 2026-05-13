@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" fill="none">
+  <!-- Transparent background — suitable for AR overlay -->
+  <defs>
+    <radialGradient id="goldShine" cx="38%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#f0d080"/>
+      <stop offset="40%" stop-color="#c9a962"/>
+      <stop offset="100%" stop-color="#7a5a1e"/>
+    </radialGradient>
+    <radialGradient id="stoneGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="35%" stop-color="#d8f0ff" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#90c8e8" stop-opacity="0.5"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Band outer -->
+  <circle cx="100" cy="135" r="68" fill="url(#goldShine)" filter="url(#glow)"/>
+  <!-- Band inner cutout -->
+  <circle cx="100" cy="135" r="50" fill="black"/>
+  <!-- Band highlight -->
+  <path d="M 55 103 A 50 50 0 0 1 100 85" stroke="#f8e89a" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+  <!-- Setting prongs (4 small gold bars at top) -->
+  <rect x="93" y="57" width="14" height="8" rx="3" fill="#c9a962"/>
+  <rect x="87" y="62" width="8" height="18" rx="3" fill="#b8921e" opacity="0.7"/>
+  <rect x="105" y="62" width="8" height="18" rx="3" fill="#b8921e" opacity="0.7"/>
+  <!-- Center stone -->
+  <polygon points="100,36 118,54 100,68 82,54" fill="url(#stoneGlow)" opacity="0.92"/>
+  <!-- Stone facets -->
+  <line x1="100" y1="36" x2="100" y2="68" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="82" y1="54" x2="118" y2="54" stroke="#ffffff" stroke-width="0.8" opacity="0.5"/>
+  <line x1="82" y1="54" x2="100" y2="36" stroke="#ffffff" stroke-width="0.5" opacity="0.35"/>
+  <line x1="118" y1="54" x2="100" y2="68" stroke="#bde" stroke-width="0.5" opacity="0.35"/>
+  <!-- Stone sparkle -->
+  <circle cx="91" cy="46" r="2" fill="#ffffff" opacity="0.85"/>
+</svg>

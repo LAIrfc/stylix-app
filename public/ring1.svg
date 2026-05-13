@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Aries Guardian Ring">
+  <defs>
+    <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#09090b" />
+      <stop offset="100%" stop-color="#171820" />
+    </linearGradient>
+    <radialGradient id="glow1" cx="50%" cy="42%" r="45%">
+      <stop offset="0%" stop-color="#d0af6b" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#d0af6b" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="900" height="900" fill="url(#bg1)" />
+  <rect width="900" height="900" fill="url(#glow1)" />
+  <circle cx="450" cy="500" r="170" fill="none" stroke="#d5b878" stroke-width="34" />
+  <circle cx="450" cy="500" r="120" fill="none" stroke="#8d6b2c" stroke-opacity="0.45" stroke-width="8" />
+</svg>

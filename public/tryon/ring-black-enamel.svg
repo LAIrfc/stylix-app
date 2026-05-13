@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Transparent background — suitable for AR overlay -->
+  <defs>
+    <radialGradient id="darkBand" cx="38%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#3a3a3a"/>
+      <stop offset="40%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </radialGradient>
+    <radialGradient id="goldEdge" cx="38%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#f0d080"/>
+      <stop offset="40%" stop-color="#c9a962"/>
+      <stop offset="100%" stop-color="#7a5a1e"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Gold outer rim -->
+  <circle cx="100" cy="100" r="74" fill="url(#goldEdge)" filter="url(#glow)"/>
+  <!-- Black enamel body -->
+  <circle cx="100" cy="100" r="66" fill="url(#darkBand)"/>
+  <!-- Inner cutout -->
+  <circle cx="100" cy="100" r="50" fill="black"/>
+  <!-- Gold inner rim -->
+  <circle cx="100" cy="100" r="57" fill="none" stroke="#c9a962" stroke-width="2.5" opacity="0.6"/>
+  <!-- Gold highlight on enamel face -->
+  <path d="M 52 70 A 56 56 0 0 1 100 45" stroke="#f0d080" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <!-- Subtle surface sheen on enamel -->
+  <path d="M 58 62 A 52 52 0 0 1 130 52" stroke="#666666" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+</svg>
