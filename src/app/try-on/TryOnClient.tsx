@@ -114,6 +114,8 @@ export function TryOnClient() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [apiKeyMissing, setApiKeyMissing] = useState<boolean | null>(null);
 
+  const [aiDemoReason, setAiDemoReason] = useState<string | null>(null);
+
   // Check API key status on mount
   useEffect(() => {
     fetch("/api/tryon/status")
@@ -152,6 +154,7 @@ export function TryOnClient() {
     setAiError(null);
     setAiDemo(false);
     setAiDemoMessage(null);
+    setAiDemoReason(null);
 
     try {
       const fd = new FormData();
@@ -166,7 +169,10 @@ export function TryOnClient() {
       setAiResult(data.resultImage);
       setAiDemo(data.demo ?? false);
       setAiDemoMessage(data.message ?? null);
-      setApiKeyMissing(data.demo ?? false);
+      setAiDemoReason(data.demoReason ?? null);
+      // only mark key missing if the reason is actually no-key
+      if (data.demoReason === "no-key") setApiKeyMissing(true);
+      else if (!data.demo) setApiKeyMissing(false);
       setStatus(data.demo ? "demo" : "generated");
     } catch (err) {
       setAiError((err as Error).message ?? "Something went wrong.");
@@ -190,7 +196,17 @@ export function TryOnClient() {
     setAiError(null);
     setAiDemo(false);
     setAiDemoMessage(null);
+    setAiDemoReason(null);
     setStatus("idle");
+  }
+
+  async function sharePreview() {
+    try {
+      await navigator.share?.({ title: "Stylix AI Preview", url: window.location.href });
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.warn("[share]", err);
+    }
   }
 
   const aiCommentary = getAICommentary(selected, occasion, mood);
@@ -372,12 +388,21 @@ export function TryOnClient() {
 
           {/* Demo mode notice */}
           {aiDemo && aiDemoMessage && (
-            <div className="border border-ivory/10 bg-ink-soft/20 px-5 py-4">
-              <p className="text-[9px] uppercase tracking-[0.3em] text-ivory/30 mb-1">Demo Mode</p>
-              <p className="text-sm text-ivory/50">{aiDemoMessage}</p>
-              <p className="mt-2 text-[9px] text-ivory/25">
-                Add <code className="text-gold/50">OPENAI_API_KEY</code> to <code className="text-gold/50">.env.local</code> to enable live AI generation.
+            <div className="border border-ivory/10 bg-ink-soft/20 px-5 py-4 space-y-2">
+              <p className="text-[9px] uppercase tracking-[0.3em] text-ivory/30">
+                {aiDemoReason === "no-key" ? "Demo Mode — No API Key" : "Generation Failed — Reference Preview Shown"}
               </p>
+              <p className="text-sm text-ivory/50">{aiDemoMessage}</p>
+              {aiDemoReason && aiDemoReason !== "no-key" && (
+                <p className="text-[9px] font-mono text-red-400/60 bg-red-400/5 px-3 py-2 border border-red-400/10">
+                  reason: {aiDemoReason}
+                </p>
+              )}
+              {aiDemoReason === "no-key" && (
+                <p className="text-[9px] text-ivory/25">
+                  Add <code className="text-gold/50">OPENAI_API_KEY</code> to <code className="text-gold/50">.env.local</code> to enable live AI generation.
+                </p>
+              )}
             </div>
           )}
 
@@ -446,8 +471,7 @@ export function TryOnClient() {
                     className="border border-ivory/20 px-5 py-2.5 text-[9px] uppercase tracking-[0.2em] text-ivory/60 hover:border-gold/40 hover:text-gold transition-colors">
                     Save Preview
                   </button>
-                  <button type="button"
-                    onClick={() => navigator.share?.({ title: "Stylix AI Preview", url: window.location.href })}
+                  <button type="button" onClick={sharePreview}
                     className="border border-ivory/20 px-5 py-2.5 text-[9px] uppercase tracking-[0.2em] text-ivory/60 hover:border-gold/40 hover:text-gold transition-colors">
                     Share
                   </button>
