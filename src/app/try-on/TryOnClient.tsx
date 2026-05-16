@@ -27,6 +27,20 @@ function ema(prev: number, next: number, alpha = 0.35): number {
   return prev + alpha * (next - prev);
 }
 
+// ── Necklace AI preview mapping ───────────────────────────────────────────────
+const NECKLACE_ITEMS = [
+  {
+    id: "aurora-necklace",
+    name: "Aurora Celestial Necklace",
+    productImage: "/tryon/aurora-necklace/product-front.jpg",
+    transparentAsset: "/tryon/aurora-necklace/transparent.png",
+    detailImage: "/tryon/aurora-necklace/detail-closeup.jpg",
+    wornReferenceImage: "/tryon/aurora-necklace/worn-reference.png",
+  },
+] as const;
+
+type NecklaceItem = typeof NECKLACE_ITEMS[number];
+
 // ── Styling context types ─────────────────────────────────────────────────────
 type Occasion = "black-tie" | "date night" | "work" | "wedding guest" | "casual" | "editorial";
 type Mood = "confident" | "dreamy" | "powerful" | "sensual" | "polished" | "playful";
@@ -121,6 +135,15 @@ export function TryOnClient() {
   const [webcamReady, setWebcamReady] = useState(false);
   const [webcamError, setWebcamError] = useState<string | null>(null);
   const [trackingActive, setTrackingActive] = useState(false);
+
+  // AI Styling Preview state
+  const [selectedNecklace, setSelectedNecklace] = useState<NecklaceItem>(NECKLACE_ITEMS[0]);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiResult, setAiResult] = useState<string | null>(null);
+  const [aiDemo, setAiDemo] = useState(false);
+  const [aiDemoMessage, setAiDemoMessage] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const uploadFileRef = useRef<File | null>(null);
 
   // Overlay controls
   const [overlayX, setOverlayX] = useState(0.5);
@@ -338,10 +361,55 @@ export function TryOnClient() {
     };
   }, [mode, drawLoop, stopWebcam, loadMediaPipe]);
 
+  // ── AI Styling Preview generate ───────────────────────────────────────────
+  async function generateAIPreview() {
+    if (!uploadFileRef.current) {
+      setAiError("Please upload a photo first.");
+      return;
+    }
+    setAiGenerating(true);
+    setAiResult(null);
+    setAiError(null);
+    setAiDemo(false);
+    setAiDemoMessage(null);
+
+    try {
+      const fd = new FormData();
+      fd.append("image", uploadFileRef.current);
+      fd.append("necklaceId", selectedNecklace.id);
+
+      const res = await fetch("/api/tryon/generate", { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error ?? "Generation failed");
+
+      setAiResult(data.resultImage);
+      setAiDemo(data.demo ?? false);
+      setAiDemoMessage(data.message ?? null);
+    } catch (err) {
+      setAiError((err as Error).message ?? "Something went wrong.");
+    } finally {
+      setAiGenerating(false);
+    }
+  }
+
+  function saveAIPreview() {
+    if (!aiResult) return;
+    const a = document.createElement("a");
+    a.href = aiResult;
+    a.download = `stylix-ai-preview-${selectedNecklace.id}.png`;
+    a.click();
+  }
+
   // ── Upload photo ──────────────────────────────────────────────────────────
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
+    uploadFileRef.current = f;
+    setAiResult(null);
+    setAiError(null);
+    setAiDemo(false);
+    setAiDemoMessage(null);
     setUploadError(null);
     setUploading(true);
     const localUrl = URL.createObjectURL(f);
@@ -465,15 +533,19 @@ export function TryOnClient() {
           <div>
             <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/40 mb-3">Input Mode</p>
             <div className="flex border border-ivory/15">
-              {(["upload", "webcam"] as const).map((m) => (
-                <button key={m} type="button" onClick={() => setMode(m)}
-                  className={`flex-1 py-3 text-[10px] uppercase tracking-[0.2em] transition-colors ${
-                    mode === m ? "bg-gold/10 text-gold" : "text-ivory/40 hover:text-ivory/60"
-                  }`}>
-                  {m === "upload" ? "Photo Upload" : "Live Camera"}
-                </button>
-              ))}
+              <button type="button" onClick={() => setMode("upload")}
+                className={`flex-1 py-3 text-[10px] uppercase tracking-[0.2em] transition-colors ${
+                  mode === "upload" ? "bg-gold/10 text-gold" : "text-ivory/40 hover:text-ivory/60"
+                }`}>
+                Photo Upload
+              </button>
+              <button type="button" disabled
+                className="flex-1 py-3 text-[10px] uppercase tracking-[0.2em] text-ivory/20 cursor-not-allowed relative">
+                Live Camera
+                <span className="ml-1.5 text-[8px] text-gold/40">Beta</span>
+              </button>
             </div>
+            <p className="mt-1.5 text-[9px] text-ivory/20">Live Camera — Private Atelier Beta · Coming Soon</p>
           </div>
 
           {/* Upload */}
@@ -597,6 +669,63 @@ export function TryOnClient() {
               onClick={mode === "upload" ? resetUpload : stopWebcam}>
               {mode === "upload" ? "Clear" : "Stop Camera"}
             </Button>
+          </div>
+
+          {/* AI Styling Preview */}
+          <div className="border border-gold/20 bg-gold/4 px-5 py-5 space-y-4">
+            <p className="text-[9px] uppercase tracking-[0.4em] text-gold/70">AI Styling Preview</p>
+
+            {/* Necklace selector */}
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.3em] text-ivory/40 mb-2">Select Necklace</p>
+              {NECKLACE_ITEMS.map((n) => (
+                <button key={n.id} type="button" onClick={() => setSelectedNecklace(n)}
+                  className={`flex w-full items-center gap-3 border p-2 text-left transition-colors ${
+                    selectedNecklace.id === n.id ? "border-gold/40 bg-gold/8" : "border-ivory/10 hover:border-ivory/20"
+                  }`}>
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden bg-stone-900">
+                    <Image src={n.productImage} alt={n.name} fill className="object-cover" sizes="40px" />
+                  </div>
+                  <p className="font-serif text-sm text-ivory">{n.name}</p>
+                </button>
+              ))}
+            </div>
+
+            {/* Generate button */}
+            <button type="button" onClick={generateAIPreview} disabled={aiGenerating}
+              className="w-full border border-gold/40 py-3 text-[10px] uppercase tracking-[0.25em] text-gold hover:bg-gold/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+              {aiGenerating ? "Creating your AI styling preview…" : "Generate AI Styling Preview"}
+            </button>
+
+            {aiError && <p className="text-xs text-red-400">{aiError}</p>}
+
+            {/* Result */}
+            {aiResult && (
+              <div className="space-y-3">
+                {aiDemo && aiDemoMessage && (
+                  <p className="text-[9px] text-ivory/30 leading-relaxed">{aiDemoMessage}</p>
+                )}
+                <div className="relative w-full overflow-hidden border border-ivory/10">
+                  <Image src={aiResult} alt="AI Styling Preview" width={400} height={400}
+                    className="w-full object-contain" unoptimized />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button type="button" onClick={saveAIPreview}
+                    className="border border-ivory/20 px-4 py-2 text-[9px] uppercase tracking-[0.2em] text-ivory/60 hover:border-gold/40 hover:text-gold transition-colors">
+                    Save Preview
+                  </button>
+                  <button type="button"
+                    onClick={() => navigator.share?.({ title: "Stylix AI Preview", url: aiResult })}
+                    className="border border-ivory/20 px-4 py-2 text-[9px] uppercase tracking-[0.2em] text-ivory/60 hover:border-gold/40 hover:text-gold transition-colors">
+                    Share
+                  </button>
+                  <Link href="/bag"
+                    className="border border-gold/30 px-4 py-2 text-[9px] uppercase tracking-[0.2em] text-gold hover:bg-gold/8 transition-colors">
+                    Add to Bag
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 3D Atelier upsell */}
