@@ -55,7 +55,7 @@ type StatusKey =
   | "failed"
   | "demo";
 
-function StatusBadge({ status, demo, apiKeyMissing }: { status: StatusKey; demo: boolean; apiKeyMissing: boolean }) {
+function StatusBadge({ status, demo, apiKeyMissing }: { status: StatusKey; demo: boolean; apiKeyMissing: boolean | null }) {
   const lines: Record<StatusKey, string> = {
     idle: "Waiting for photo upload",
     "photo-received": "Photo received — ready to generate",
@@ -78,8 +78,8 @@ function StatusBadge({ status, demo, apiKeyMissing }: { status: StatusKey; demo:
     <div className="border border-ivory/8 bg-ink-soft/20 px-4 py-3 space-y-1">
       <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/30">Status</p>
       <p className={`text-xs ${colors[status]}`}>{lines[status]}</p>
-      <p className={`text-[9px] ${apiKeyMissing ? "text-red-400/60" : "text-gold/40"}`}>
-        OpenAI API key: {apiKeyMissing ? "not connected" : "detected"}
+      <p className={`text-[9px] ${apiKeyMissing === null ? "text-ivory/25" : apiKeyMissing ? "text-red-400/60" : "text-gold/40"}`}>
+        OpenAI API key: {apiKeyMissing === null ? "checking…" : apiKeyMissing ? "not connected" : "detected"}
       </p>
     </div>
   );
@@ -112,13 +112,21 @@ export function TryOnClient() {
   const [aiDemo, setAiDemo] = useState(false);
   const [aiDemoMessage, setAiDemoMessage] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const [apiKeyMissing, setApiKeyMissing] = useState<boolean | null>(null);
 
-  // Detect API key status from demo response
+  // Check API key status on mount
   useEffect(() => {
-    if (aiDemo) setApiKeyMissing(true);
-    else if (status === "generated") setApiKeyMissing(false);
-  }, [aiDemo, status]);
+    fetch("/api/tryon/status")
+      .then((r) => r.json())
+      .then((d) => setApiKeyMissing(!d.hasOpenAIKey))
+      .catch(() => setApiKeyMissing(true));
+  }, []);
+
+  // Update API key status after generation
+  useEffect(() => {
+    if (status === "generated" && !aiDemo) setApiKeyMissing(false);
+    if (status === "demo") setApiKeyMissing(true);
+  }, [status, aiDemo]);
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -457,7 +465,7 @@ export function TryOnClient() {
           </div>
 
           <p className="text-xs text-ivory/20">
-            AI Styling Preview · {selectedNecklace.name} · {aiDemo ? "Demo mode — connect OpenAI API key for live generation" : status === "generated" ? "Live AI generation" : "Upload a photo and click Generate"}
+            AI Styling Preview · {selectedNecklace.name} · {apiKeyMissing === null ? "checking API key…" : apiKeyMissing ? "Demo mode — connect OpenAI API key for live generation" : status === "generated" ? "Live AI generation" : "Upload a photo and click Generate"}
           </p>
         </div>
       </div>
