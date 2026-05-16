@@ -27,33 +27,41 @@ const TRYON_PROMPT =
   "Do not alter the clothing except where the necklace naturally overlaps.";
 
 export async function POST(req: NextRequest) {
+  console.log("[tryon/generate] POST received");
   try {
     const formData = await req.formData();
     const file = formData.get("image") as File | null;
     const necklaceId = formData.get("necklaceId") as string | null;
 
+    console.log("[tryon/generate] necklaceId:", necklaceId, "| file:", file?.name, file?.size, "bytes");
+
     if (!file || !necklaceId) {
+      console.warn("[tryon/generate] Missing image or necklaceId");
       return NextResponse.json({ error: "Missing image or necklaceId" }, { status: 400 });
     }
 
     const necklace = NECKLACE_MAP[necklaceId];
     if (!necklace) {
+      console.warn("[tryon/generate] Unknown necklace id:", necklaceId);
       return NextResponse.json({ error: "Unknown necklace id" }, { status: 400 });
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
+    console.log("[tryon/generate] OPENAI_API_KEY present:", !!apiKey);
 
     // ── Demo mode fallback ────────────────────────────────────────────────────
     if (!apiKey) {
+      console.log("[tryon/generate] No API key — returning demo mode response");
       return NextResponse.json({
         demo: true,
-        message: "AI styling preview is in demo mode. Add OPENAI_API_KEY to enable live generation.",
+        message: "Demo mode: OpenAI API key is not connected yet.",
         resultImage: necklace.wornReferenceImage,
         necklace,
       });
     }
 
     // ── Live OpenAI image edit ────────────────────────────────────────────────
+    console.log("[tryon/generate] Calling OpenAI images.edit with model gpt-image-1");
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey });
 
@@ -68,16 +76,19 @@ export async function POST(req: NextRequest) {
       size: "1024x1024",
     });
 
+    console.log("[tryon/generate] OpenAI response received, data length:", response.data?.length);
+
     const result = response.data?.[0];
     if (!result) throw new Error("No image returned from OpenAI");
 
     const resultImage = result.url ?? (result.b64_json ? `data:image/png;base64,${result.b64_json}` : null);
     if (!resultImage) throw new Error("No image URL or base64 in response");
 
+    console.log("[tryon/generate] Success — returning result image");
     return NextResponse.json({ demo: false, resultImage, necklace });
 
   } catch (err) {
-    console.error("[tryon/generate]", err);
+    console.error("[tryon/generate] Error:", err);
     const necklaceId = "aurora-necklace";
     const necklace = NECKLACE_MAP[necklaceId];
     return NextResponse.json({
