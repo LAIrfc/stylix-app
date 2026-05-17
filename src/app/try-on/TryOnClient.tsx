@@ -51,6 +51,8 @@ type StatusKey =
   | "idle"
   | "photo-received"
   | "generating"
+  | "api-started"
+  | "timeout"
   | "generated"
   | "failed"
   | "demo";
@@ -59,16 +61,20 @@ function StatusBadge({ status, demo, apiKeyMissing }: { status: StatusKey; demo:
   const lines: Record<StatusKey, string> = {
     idle: "Waiting for photo upload",
     "photo-received": "Photo received — ready to generate",
-    generating: "Generating preview…",
+    generating: "Compressing and sending photo…",
+    "api-started": "OpenAI generation in progress…",
+    timeout: "Request timed out — try a smaller photo",
     generated: demo ? "Preview generated (demo mode)" : "Preview generated",
     failed: "Generation failed — see error below",
-    demo: "Demo mode — no API key connected",
+    demo: "Reference preview shown",
   };
 
   const colors: Record<StatusKey, string> = {
     idle: "text-ivory/25",
     "photo-received": "text-gold/60",
     generating: "text-gold animate-pulse",
+    "api-started": "text-gold animate-pulse",
+    timeout: "text-red-400",
     generated: demo ? "text-ivory/40" : "text-gold/80",
     failed: "text-red-400",
     demo: "text-ivory/30",
@@ -83,6 +89,32 @@ function StatusBadge({ status, demo, apiKeyMissing }: { status: StatusKey; demo:
       </p>
     </div>
   );
+}
+
+// ── Client-side image compression ────────────────────────────────────────────
+async function compressImage(file: File, maxPx = 1024, quality = 0.85): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -157,8 +189,14 @@ export function TryOnClient() {
     setAiDemoReason(null);
 
     try {
+      // Compress client-side before sending
+      const compressed = await compressImage(uploadFileRef.current, 1024, 0.85);
+      console.log(`[tryon] compressed: ${(compressed.size / 1024).toFixed(1)} KB (original: ${(uploadFileRef.current.size / 1024).toFixed(1)} KB)`);
+
+      setStatus("api-started");
+
       const fd = new FormData();
-      fd.append("image", uploadFileRef.current);
+      fd.append("image", compressed);
       fd.append("necklaceId", selectedNecklace.id);
 
       const res = await fetch("/api/tryon/generate", { method: "POST", body: fd });
@@ -170,10 +208,10 @@ export function TryOnClient() {
       setAiDemo(data.demo ?? false);
       setAiDemoMessage(data.message ?? null);
       setAiDemoReason(data.demoReason ?? null);
-      // only mark key missing if the reason is actually no-key
       if (data.demoReason === "no-key") setApiKeyMissing(true);
       else if (!data.demo) setApiKeyMissing(false);
-      setStatus(data.demo ? "demo" : "generated");
+      if (data.demoReason === "timeout") setStatus("timeout");
+      else setStatus(data.demo ? "demo" : "generated");
     } catch (err) {
       setAiError((err as Error).message ?? "Something went wrong.");
       setStatus("failed");
@@ -381,16 +419,18 @@ export function TryOnClient() {
 
           {/* Generate button */}
           <button type="button" onClick={generateAIPreview}
-            disabled={status === "generating" || !photoUrl}
+            disabled={status === "generating" || status === "api-started" || !photoUrl}
             className="w-full border border-gold/40 py-4 text-[11px] uppercase tracking-[0.3em] text-gold hover:bg-gold/8 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-            {status === "generating" ? "Creating your AI styling preview…" : "Generate AI Styling Preview"}
+            {(status === "generating" || status === "api-started") ? "Creating your AI styling preview…" : "Generate AI Styling Preview"}
           </button>
 
-          {/* Demo mode notice */}
+          {/* Demo mode / error notice */}
           {aiDemo && aiDemoMessage && (
             <div className="border border-ivory/10 bg-ink-soft/20 px-5 py-4 space-y-2">
               <p className="text-[9px] uppercase tracking-[0.3em] text-ivory/30">
-                {aiDemoReason === "no-key" ? "Demo Mode — No API Key" : "Generation Failed — Reference Preview Shown"}
+                {aiDemoReason === "no-key" ? "Demo Mode — No API Key"
+                  : aiDemoReason === "timeout" ? "Request Timed Out"
+                  : "Generation Failed — Reference Preview Shown"}
               </p>
               <p className="text-sm text-ivory/50">{aiDemoMessage}</p>
               {aiDemoReason && aiDemoReason !== "no-key" && (
@@ -401,6 +441,11 @@ export function TryOnClient() {
               {aiDemoReason === "no-key" && (
                 <p className="text-[9px] text-ivory/25">
                   Add <code className="text-gold/50">OPENAI_API_KEY</code> to <code className="text-gold/50">.env.local</code> to enable live AI generation.
+                </p>
+              )}
+              {aiDemoReason === "timeout" && (
+                <p className="text-[9px] text-ivory/25">
+                  Try uploading a smaller or lower-resolution photo.
                 </p>
               )}
             </div>
@@ -439,12 +484,14 @@ export function TryOnClient() {
             )}
 
             {/* Generating state */}
-            {status === "generating" && (
+            {(status === "generating" || status === "api-started") && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                 <p className="text-[10px] uppercase tracking-[0.4em] text-gold/60 animate-pulse">
-                  Creating your AI styling preview…
+                  {status === "generating" ? "Preparing photo…" : "Creating your AI styling preview…"}
                 </p>
-                <p className="text-xs text-ivory/25">This may take 10–20 seconds</p>
+                <p className="text-xs text-ivory/25">
+                  {status === "api-started" ? "This may take 20–60 seconds" : "Compressing image…"}
+                </p>
               </div>
             )}
 

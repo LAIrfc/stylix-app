@@ -24,6 +24,18 @@ const TRYON_PROMPT =
   "Do not change the person's identity. " +
   "Do not alter the clothing except where the necklace naturally overlaps.";
 
+function isTimeoutError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  return (
+    msg.includes("timeout") ||
+    msg.includes("timed out") ||
+    msg.includes("etimedout") ||
+    msg.includes("econnreset") ||
+    (err as NodeJS.ErrnoException).code === "ETIMEDOUT"
+  );
+}
+
 export async function POST(req: NextRequest) {
   console.log("[tryon/generate] route hit");
 
@@ -36,7 +48,7 @@ export async function POST(req: NextRequest) {
     const necklaceId = formData.get("necklaceId") as string | null;
 
     console.log("[tryon/generate] necklaceId:", necklaceId);
-    console.log("[tryon/generate] image received:", !!file, file ? `${file.name} ${file.size} bytes` : "none");
+    console.log("[tryon/generate] image received:", !!file, file ? `${file.name} | ${(file.size / 1024).toFixed(1)} KB | type: ${file.type}` : "none");
 
     if (!file || !necklaceId) {
       return NextResponse.json({ error: "Missing image or necklaceId" }, { status: 400 });
@@ -58,12 +70,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log("[tryon/generate] OpenAI API call started — model: gpt-image-1");
-    const { default: OpenAI } = await import("openai");
-    const openai = new OpenAI({ apiKey });
-
     const imageBuffer = Buffer.from(await file.arrayBuffer());
     const imageFile = new File([imageBuffer], file.name, { type: file.type });
+
+    console.log("[tryon/generate] payload — model: gpt-image-1 | images: 1 | size:", `${(imageBuffer.byteLength / 1024).toFixed(1)} KB | necklace: ${necklaceId}`);
+    console.log("[tryon/generate] OpenAI API call started — timeout: 120s");
+
+    const { default: OpenAI } = await import("openai");
+    const openai = new OpenAI({
+      apiKey,
+      timeout: 120_000,
+      maxRetries: 0,
+    });
 
     let response;
     try {
@@ -77,11 +95,14 @@ export async function POST(req: NextRequest) {
       console.log("[tryon/generate] OpenAI API success — data length:", response.data?.length);
     } catch (openaiErr: unknown) {
       const msg = openaiErr instanceof Error ? openaiErr.message : String(openaiErr);
-      console.error("[tryon/generate] OpenAI API failure:", msg);
+      const timedOut = isTimeoutError(openaiErr);
+      console.error(`[tryon/generate] OpenAI API ${timedOut ? "TIMEOUT" : "failure"}:`, msg);
       return NextResponse.json({
         demo: true,
-        demoReason: "openai-error",
-        message: `OpenAI error: ${msg}`,
+        demoReason: timedOut ? "timeout" : "openai-error",
+        message: timedOut
+          ? "Generation timed out. Try a smaller photo."
+          : `OpenAI error: ${msg}`,
         resultImage: necklace.wornReferenceImage,
         necklace,
       });
