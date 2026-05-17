@@ -92,7 +92,7 @@ function StatusBadge({ status, demo, apiKeyMissing }: { status: StatusKey; demo:
 }
 
 // ── Client-side image compression ────────────────────────────────────────────
-async function compressImage(file: File, maxPx = 1024, quality = 0.85): Promise<File> {
+async function compressImage(file: File, maxPx = 768, quality = 0.7): Promise<File> {
   return new Promise((resolve) => {
     const img = new window.Image();
     img.onload = () => {
