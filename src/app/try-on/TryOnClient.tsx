@@ -2,252 +2,157 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { products } from "@/lib/data/products";
-import type { Product } from "@/lib/types/product";
 
-// ── Necklace AI preview mapping ───────────────────────────────────────────────
-const NECKLACE_ITEMS = [
-  {
-    id: "aurora-necklace",
-    name: "Aurora Celestial Necklace",
-    productImage: "/tryon/aurora-necklace/product-front.jpg",
-    transparentAsset: "/tryon/aurora-necklace/transparent.png",
-    detailImage: "/tryon/aurora-necklace/detail-closeup.jpg",
-    wornReferenceImage: "/tryon/aurora-necklace/worn-reference.png",
-  },
-] as const;
-
-type NecklaceItem = typeof NECKLACE_ITEMS[number];
-
-// ── Styling context types ─────────────────────────────────────────────────────
-type Occasion = "black-tie" | "date night" | "work" | "wedding guest" | "casual" | "editorial";
-type Mood = "confident" | "dreamy" | "powerful" | "sensual" | "polished" | "playful";
-
-const occasionLabels: Record<Occasion, string> = {
-  "black-tie": "Black-Tie", "date night": "Date Night", work: "Professional",
-  "wedding guest": "Wedding Guest", casual: "Casual", editorial: "Editorial",
-};
-const moodLabels: Record<Mood, string> = {
-  confident: "Confident", dreamy: "Dreamy", powerful: "Powerful",
-  sensual: "Sensual", polished: "Polished", playful: "Playful",
+// ── Necklace data ─────────────────────────────────────────────────────────────
+const NECKLACE = {
+  id: "aurora-necklace",
+  name: "Aurora Celestial Necklace",
+  productImage: "/tryon/aurora-necklace/product-front.jpg",
 };
 
-function getAICommentary(product: Product, occasion: Occasion | null, mood: Mood | null): string {
-  if (!occasion && !mood) return `${product.name} — select an occasion and mood for a personalised styling note.`;
-  const oNote = occasion ? `for ${occasionLabels[occasion].toLowerCase()}` : "";
-  const mNote = mood ? `carrying a ${moodLabels[mood].toLowerCase()} energy` : "";
-  const join = oNote && mNote ? ", " : "";
-  if (product.tags.collectionCategory === "designer-capsule") {
-    return `${product.name} — curated from the ${product.collaboratorName ?? "designer"} capsule${oNote ? ` ${oNote}` : ""}${join}${mNote}. Selected by Stylix for your profile.`;
+// ── Draw necklace shape on canvas ─────────────────────────────────────────────
+function drawNecklace(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  width: number,
+  rotateDeg: number,
+  opacity: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.translate(cx, cy);
+  ctx.rotate((rotateDeg * Math.PI) / 180);
+
+  const hw = width / 2;
+  const chainDrop = width * 0.18;
+
+  // Main chain arc
+  ctx.strokeStyle = "#C9A962";
+  ctx.lineWidth = Math.max(2, width * 0.012);
+  ctx.beginPath();
+  ctx.moveTo(-hw, 0);
+  ctx.quadraticCurveTo(0, chainDrop, hw, 0);
+  ctx.stroke();
+
+  // Inner chain (layered look)
+  ctx.strokeStyle = "rgba(201,169,98,0.5)";
+  ctx.lineWidth = Math.max(1.5, width * 0.008);
+  ctx.beginPath();
+  ctx.moveTo(-hw * 0.85, 0);
+  ctx.quadraticCurveTo(0, chainDrop * 0.7, hw * 0.85, 0);
+  ctx.stroke();
+
+  // Star charms along the chain
+  const numStars = 7;
+  ctx.fillStyle = "#C9A962";
+  for (let i = 0; i < numStars; i++) {
+    const t = (i + 1) / (numStars + 1);
+    const x = -hw + t * width;
+    const progress = Math.sin(t * Math.PI);
+    const y = chainDrop * progress;
+    drawStar(ctx, x, y, width * 0.018, 4);
   }
-  const sym = product.symbolism ? ` ${product.symbolism.split("—")[0].trim()}.` : "";
-  return `${product.name}${oNote ? ` — selected ${oNote}` : ""}${join}${mNote}.${sym} Balanced for your silhouette.`;
+
+  // Center pendant
+  ctx.fillStyle = "#C9A962";
+  ctx.beginPath();
+  ctx.arc(0, chainDrop + width * 0.03, width * 0.025, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Crystal accent on pendant
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.beginPath();
+  ctx.arc(0, chainDrop + width * 0.025, width * 0.012, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
-// ── Status line ───────────────────────────────────────────────────────────────
-type StatusKey =
-  | "idle"
-  | "photo-received"
-  | "generating"
-  | "api-started"
-  | "timeout"
-  | "generated"
-  | "failed"
-  | "demo";
-
-function StatusBadge({ status, demo, apiKeyMissing }: { status: StatusKey; demo: boolean; apiKeyMissing: boolean | null }) {
-  const lines: Record<StatusKey, string> = {
-    idle: "Waiting for photo upload",
-    "photo-received": "Photo received — ready to generate",
-    generating: "Compressing and sending photo…",
-    "api-started": "OpenAI generation in progress…",
-    timeout: "Request timed out — try a smaller photo",
-    generated: demo ? "Preview generated (demo mode)" : "Preview generated",
-    failed: "Generation failed — see error below",
-    demo: "Reference preview shown",
-  };
-
-  const colors: Record<StatusKey, string> = {
-    idle: "text-ivory/25",
-    "photo-received": "text-gold/60",
-    generating: "text-gold animate-pulse",
-    "api-started": "text-gold animate-pulse",
-    timeout: "text-red-400",
-    generated: demo ? "text-ivory/40" : "text-gold/80",
-    failed: "text-red-400",
-    demo: "text-ivory/30",
-  };
-
-  return (
-    <div className="border border-ivory/8 bg-ink-soft/20 px-4 py-3 space-y-1">
-      <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/30">Status</p>
-      <p className={`text-xs ${colors[status]}`}>{lines[status]}</p>
-      <p className={`text-[9px] ${apiKeyMissing === null ? "text-ivory/25" : apiKeyMissing ? "text-red-400/60" : "text-gold/40"}`}>
-        OpenAI API key: {apiKeyMissing === null ? "checking…" : apiKeyMissing ? "not connected" : "detected"}
-      </p>
-    </div>
-  );
-}
-
-// ── Client-side image compression ────────────────────────────────────────────
-async function compressImage(file: File, maxPx = 768, quality = 0.7): Promise<File> {
-  return new Promise((resolve) => {
-    const img = new window.Image();
-    img.onload = () => {
-      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { resolve(file); return; }
-          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
-        },
-        "image/jpeg",
-        quality,
-      );
-    };
-    img.onerror = () => resolve(file);
-    img.src = URL.createObjectURL(file);
-  });
+function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, points: number) {
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const angle = (i * Math.PI) / points - Math.PI / 2;
+    const radius = i % 2 === 0 ? r : r * 0.4;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function TryOnClient() {
-  const searchParams = useSearchParams();
-  const initialSlug = searchParams.get("piece");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const photoImgRef = useRef<HTMLImageElement | null>(null);
 
-  const [selected, setSelected] = useState<Product>(() => {
-    const found = initialSlug ? products.find((p) => p.slug === initialSlug) : undefined;
-    return found ?? products[0];
-  });
-
-  const [selectedNecklace, setSelectedNecklace] = useState<NecklaceItem>(NECKLACE_ITEMS[0]);
-  const [occasion, setOccasion] = useState<Occasion | null>(null);
-  const [mood, setMood] = useState<Mood | null>(null);
-  const [panelOpen, setPanelOpen] = useState(true);
-
-  // Upload state
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoFileName, setPhotoFileName] = useState<string | null>(null);
-  const uploadFileRef = useRef<File | null>(null);
 
-  // AI generation state
-  const [status, setStatus] = useState<StatusKey>("idle");
-  const [aiResult, setAiResult] = useState<string | null>(null);
-  const [aiDemo, setAiDemo] = useState(false);
-  const [aiDemoMessage, setAiDemoMessage] = useState<string | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [apiKeyMissing, setApiKeyMissing] = useState<boolean | null>(null);
+  // Overlay controls — defaults for neck area
+  const [overlayX, setOverlayX] = useState(50);
+  const [overlayY, setOverlayY] = useState(58);
+  const [overlayScale, setOverlayScale] = useState(55);
+  const [overlayRotate, setOverlayRotate] = useState(0);
+  const [overlayOpacity, setOverlayOpacity] = useState(92);
 
-  const [aiDemoReason, setAiDemoReason] = useState<string | null>(null);
+  // Render canvas
+  function render() {
+    const canvas = canvasRef.current;
+    const img = photoImgRef.current;
+    if (!canvas || !img) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-  // Check API key status on mount
-  useEffect(() => {
-    fetch("/api/tryon/status")
-      .then((r) => r.json())
-      .then((d) => setApiKeyMissing(!d.hasOpenAIKey))
-      .catch(() => setApiKeyMissing(true));
-  }, []);
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0);
 
-  // Update API key status after generation
-  useEffect(() => {
-    if (status === "generated" && !aiDemo) setApiKeyMissing(false);
-    if (status === "demo") setApiKeyMissing(true);
-  }, [status, aiDemo]);
+    const cx = (overlayX / 100) * canvas.width;
+    const cy = (overlayY / 100) * canvas.height;
+    const neckWidth = (overlayScale / 100) * canvas.width;
+
+    drawNecklace(ctx, cx, cy, neckWidth, overlayRotate, overlayOpacity / 100);
+  }
+
+  useEffect(() => { render(); });
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    uploadFileRef.current = f;
     setPhotoFileName(f.name);
     const url = URL.createObjectURL(f);
     setPhotoUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url; });
-    setAiResult(null);
-    setAiError(null);
-    setAiDemo(false);
-    setAiDemoMessage(null);
-    setStatus("photo-received");
-  }
 
-  async function generateAIPreview() {
-    if (!uploadFileRef.current) {
-      setAiError("Please upload a photo first.");
-      return;
-    }
-    setStatus("generating");
-    setAiResult(null);
-    setAiError(null);
-    setAiDemo(false);
-    setAiDemoMessage(null);
-    setAiDemoReason(null);
-
-    try {
-      // Compress client-side before sending
-      const compressed = await compressImage(uploadFileRef.current, 1024, 0.85);
-      console.log(`[tryon] compressed: ${(compressed.size / 1024).toFixed(1)} KB (original: ${(uploadFileRef.current.size / 1024).toFixed(1)} KB)`);
-
-      setStatus("api-started");
-
-      const fd = new FormData();
-      fd.append("image", compressed);
-      fd.append("necklaceId", selectedNecklace.id);
-
-      const res = await fetch("/api/tryon/generate", { method: "POST", body: fd });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error ?? "Generation failed");
-
-      setAiResult(data.resultImage);
-      setAiDemo(data.demo ?? false);
-      setAiDemoMessage(data.message ?? null);
-      setAiDemoReason(data.demoReason ?? null);
-      if (data.demoReason === "no-key") setApiKeyMissing(true);
-      else if (!data.demo) setApiKeyMissing(false);
-      if (data.demoReason === "timeout") setStatus("timeout");
-      else setStatus(data.demo ? "demo" : "generated");
-    } catch (err) {
-      setAiError((err as Error).message ?? "Something went wrong.");
-      setStatus("failed");
-    }
-  }
-
-  function savePreview() {
-    if (!aiResult) return;
-    const a = document.createElement("a");
-    a.href = aiResult;
-    a.download = `stylix-ai-preview-${selectedNecklace.id}.png`;
-    a.click();
+    const img = new window.Image();
+    img.onload = () => {
+      photoImgRef.current = img;
+      render();
+    };
+    img.src = url;
   }
 
   function resetUpload() {
-    uploadFileRef.current = null;
     setPhotoUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
     setPhotoFileName(null);
-    setAiResult(null);
-    setAiError(null);
-    setAiDemo(false);
-    setAiDemoMessage(null);
-    setAiDemoReason(null);
-    setStatus("idle");
+    photoImgRef.current = null;
+    const c = canvasRef.current;
+    if (c) c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
   }
 
-  async function sharePreview() {
-    try {
-      await navigator.share?.({ title: "Stylix AI Preview", url: window.location.href });
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") return;
-      console.warn("[share]", err);
-    }
+  function download() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `stylix-tryon-${NECKLACE.id}.png`;
+    a.click();
   }
-
-  const aiCommentary = getAICommentary(selected, occasion, mood);
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10">
@@ -256,79 +161,25 @@ export function TryOnClient() {
         {/* ── Left panel ─────────────────────────────────────────────── */}
         <div className="space-y-5">
 
-          {/* Styling context */}
-          <div className="border border-ivory/10 bg-ink-soft/30">
-            <button type="button" onClick={() => setPanelOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-6 py-4">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-gold/70">Styling Context</p>
-              <span className="text-ivory/30 text-xs">{panelOpen ? "−" : "+"}</span>
-            </button>
-            {panelOpen && (
-              <div className="border-t border-ivory/8 px-6 pb-6 pt-5 space-y-5">
-                <div>
-                  <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/40 mb-3">Occasion</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.keys(occasionLabels) as Occasion[]).map((o) => (
-                      <button key={o} type="button" onClick={() => setOccasion(occasion === o ? null : o)}
-                        className={`border px-3 py-1.5 text-[9px] uppercase tracking-[0.2em] transition-colors ${
-                          occasion === o ? "border-gold/60 bg-gold/8 text-gold" : "border-ivory/10 text-ivory/40 hover:border-ivory/25 hover:text-ivory/60"
-                        }`}>
-                        {occasionLabels[o]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/40 mb-3">Mood</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.keys(moodLabels) as Mood[]).map((m) => (
-                      <button key={m} type="button" onClick={() => setMood(mood === m ? null : m)}
-                        className={`border px-3 py-1.5 text-[9px] uppercase tracking-[0.2em] transition-colors ${
-                          mood === m ? "border-gold/60 bg-gold/8 text-gold" : "border-ivory/10 text-ivory/40 hover:border-ivory/25 hover:text-ivory/60"
-                        }`}>
-                        {moodLabels[m]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          {/* Necklace info */}
+          <div className="border border-gold/15 bg-gold/4 px-5 py-5">
+            <p className="text-[9px] uppercase tracking-[0.4em] text-gold/60 mb-3">Virtual Try-On</p>
+            <div className="flex items-center gap-3">
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden bg-stone-900 border border-ivory/10">
+                <Image src={NECKLACE.productImage} alt={NECKLACE.name} fill className="object-cover" sizes="48px" />
               </div>
-            )}
-          </div>
-
-          {/* AI commentary */}
-          <div className="border border-gold/15 bg-gold/4 px-6 py-5">
-            <p className="text-[9px] uppercase tracking-[0.4em] text-gold/60 mb-3">Stylix · Styling Note</p>
-            <p className="text-sm leading-relaxed text-ivory/75 font-serif italic">&ldquo;{aiCommentary}&rdquo;</p>
-            {selected.tags.collectionCategory === "designer-capsule" && selected.collaboratorName && (
-              <p className="mt-3 text-[9px] uppercase tracking-[0.3em] text-gold/40">
-                {selected.collaboratorName} · Curated Designer Capsule
-              </p>
-            )}
-          </div>
-
-          {/* Input mode */}
-          <div>
-            <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/40 mb-3">Input Mode</p>
-            <div className="flex border border-ivory/15">
-              <button type="button"
-                className="flex-1 py-3 text-[10px] uppercase tracking-[0.2em] bg-gold/10 text-gold">
-                Photo Upload
-              </button>
-              <button type="button" disabled
-                className="flex-1 py-3 text-[10px] uppercase tracking-[0.2em] text-ivory/20 cursor-not-allowed">
-                Live Camera <span className="text-[8px] text-gold/30 ml-1">Beta</span>
-              </button>
+              <p className="font-serif text-sm text-ivory">{NECKLACE.name}</p>
             </div>
-            <p className="mt-1.5 text-[9px] text-ivory/20">Live Camera — Private Atelier Beta · Coming Soon</p>
           </div>
 
           {/* Upload area */}
           <div>
+            <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/40 mb-3">Upload Photo</p>
             <label className="flex flex-col items-center justify-center border border-dashed border-ivory/15 px-6 py-8 cursor-pointer hover:border-gold/30 transition-colors">
               <span className="text-[10px] uppercase tracking-[0.3em] text-ivory/30 mb-1">
-                {photoFileName ? photoFileName : "Drag & drop or click to upload"}
+                {photoFileName ?? "Drag & drop or click to upload"}
               </span>
-              <span className="text-[9px] text-ivory/20">JPG · PNG · WEBP · Upper body or portrait</span>
+              <span className="text-[9px] text-ivory/20">JPG · PNG · WEBP · Portrait or upper body</span>
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onFile} className="sr-only" />
             </label>
             {photoUrl && (
@@ -339,59 +190,83 @@ export function TryOnClient() {
             )}
           </div>
 
-          {/* Necklace selector */}
-          <div>
-            <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/40 mb-3">Select Necklace</p>
-            {NECKLACE_ITEMS.map((n) => (
-              <button key={n.id} type="button" onClick={() => setSelectedNecklace(n)}
-                className={`flex w-full items-center gap-3 border p-2 text-left transition-colors ${
-                  selectedNecklace.id === n.id ? "border-gold/40 bg-gold/8" : "border-ivory/10 hover:border-ivory/20"
-                }`}>
-                <div className="relative h-10 w-10 shrink-0 overflow-hidden bg-stone-900">
-                  <Image src={n.productImage} alt={n.name} fill className="object-cover" sizes="40px" />
-                </div>
-                <div>
-                  <p className="font-serif text-sm text-ivory">{n.name}</p>
-                  {selectedNecklace.id === n.id && (
-                    <p className="text-[9px] text-gold/50 uppercase tracking-wider">Selected</p>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
+          {/* Placement controls */}
+          {photoUrl && (
+            <div className="border border-ivory/10 px-5 py-5 space-y-4">
+              <p className="text-[9px] uppercase tracking-[0.4em] text-gold/60">Adjust Placement</p>
 
-          {/* Piece selector (all products for styling context) */}
-          <div>
-            <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/40 mb-3">Styling Reference</p>
-            <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-              {products.map((p) => {
-                const isDesigner = p.tags.collectionCategory === "designer-capsule";
-                return (
-                  <button key={p.id} type="button" onClick={() => setSelected(p)}
-                    className={`flex w-full items-center gap-3 border p-2 text-left transition-colors ${
-                      selected.id === p.id ? "border-gold/40 bg-gold/5" : "border-ivory/8 hover:border-ivory/20"
-                    }`}>
-                    <div className="relative h-11 w-11 shrink-0 overflow-hidden bg-stone-900">
-                      <Image src={p.coverImage} alt="" fill className="object-cover" sizes="44px" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-serif text-sm text-ivory truncate">{p.name}</p>
-                      <p className="text-[9px] uppercase tracking-wider text-ivory/30 truncate">
-                        {isDesigner && p.collaboratorName ? p.collaboratorName : p.category}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
+              <div>
+                <div className="flex justify-between mb-1">
+                  <label className="text-[9px] uppercase tracking-[0.25em] text-ivory/40">Position X</label>
+                  <span className="text-[9px] text-ivory/30">{overlayX}%</span>
+                </div>
+                <input type="range" min={10} max={90} value={overlayX}
+                  onChange={(e) => setOverlayX(Number(e.target.value))}
+                  className="w-full accent-[#C9A962]" />
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1">
+                  <label className="text-[9px] uppercase tracking-[0.25em] text-ivory/40">Position Y</label>
+                  <span className="text-[9px] text-ivory/30">{overlayY}%</span>
+                </div>
+                <input type="range" min={20} max={90} value={overlayY}
+                  onChange={(e) => setOverlayY(Number(e.target.value))}
+                  className="w-full accent-[#C9A962]" />
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1">
+                  <label className="text-[9px] uppercase tracking-[0.25em] text-ivory/40">Scale</label>
+                  <span className="text-[9px] text-ivory/30">{overlayScale}%</span>
+                </div>
+                <input type="range" min={15} max={85} value={overlayScale}
+                  onChange={(e) => setOverlayScale(Number(e.target.value))}
+                  className="w-full accent-[#C9A962]" />
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1">
+                  <label className="text-[9px] uppercase tracking-[0.25em] text-ivory/40">Rotate</label>
+                  <span className="text-[9px] text-ivory/30">{overlayRotate}°</span>
+                </div>
+                <input type="range" min={-30} max={30} value={overlayRotate}
+                  onChange={(e) => setOverlayRotate(Number(e.target.value))}
+                  className="w-full accent-[#C9A962]" />
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1">
+                  <label className="text-[9px] uppercase tracking-[0.25em] text-ivory/40">Opacity</label>
+                  <span className="text-[9px] text-ivory/30">{overlayOpacity}%</span>
+                </div>
+                <input type="range" min={20} max={100} value={overlayOpacity}
+                  onChange={(e) => setOverlayOpacity(Number(e.target.value))}
+                  className="w-full accent-[#C9A962]" />
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Actions */}
+          {photoUrl && (
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={download}
+                className="border border-gold/30 px-5 py-2.5 text-[9px] uppercase tracking-[0.2em] text-gold hover:bg-gold/8 transition-colors">
+                Save Preview
+              </button>
+              <Link href="/bag"
+                className="border border-ivory/20 px-5 py-2.5 text-[9px] uppercase tracking-[0.2em] text-ivory/60 hover:border-gold/40 hover:text-gold transition-colors">
+                Add to Bag
+              </Link>
+            </div>
+          )}
 
           {/* 3D Atelier upsell */}
           <div className="border border-gold/15 bg-gold/4 px-5 py-5">
             <p className="text-[9px] uppercase tracking-[0.35em] text-gold/60 mb-2">Private Atelier · Coming Soon</p>
-            <p className="font-serif text-sm text-ivory/70 mb-1">3D Atelier Try-On</p>
+            <p className="font-serif text-sm text-ivory/70 mb-1">AI-Powered Try-On</p>
             <p className="text-xs leading-relaxed text-ivory/35">
-              Real-time 3D ring rendering anchored to your hand — Private Atelier Access only.
+              AI-generated photorealistic necklace placement — Private Atelier Access only.
             </p>
             <p className="mt-2 text-[9px] text-ivory/25">
               Available for VIP clients and verified purchases.
@@ -411,132 +286,33 @@ export function TryOnClient() {
           </div>
         </div>
 
-        {/* ── Right: AI preview ───────────────────────────────────────── */}
-        <div className="flex flex-col gap-6">
-
-          {/* Status */}
-          <StatusBadge status={status} demo={aiDemo} apiKeyMissing={apiKeyMissing} />
-
-          {/* Generate button */}
-          <button type="button" onClick={generateAIPreview}
-            disabled={status === "generating" || status === "api-started" || !photoUrl}
-            className="w-full border border-gold/40 py-4 text-[11px] uppercase tracking-[0.3em] text-gold hover:bg-gold/8 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-            {(status === "generating" || status === "api-started") ? "Creating your AI styling preview…" : "Generate AI Styling Preview"}
-          </button>
-
-          {/* Demo mode / error notice */}
-          {aiDemo && aiDemoMessage && (
-            <div className="border border-ivory/10 bg-ink-soft/20 px-5 py-4 space-y-2">
-              <p className="text-[9px] uppercase tracking-[0.3em] text-ivory/30">
-                {aiDemoReason === "no-key" ? "Demo Mode — No API Key"
-                  : aiDemoReason === "timeout" ? "Request Timed Out"
-                  : "Generation Failed — Reference Preview Shown"}
-              </p>
-              <p className="text-sm text-ivory/50">{aiDemoMessage}</p>
-              {aiDemoReason && aiDemoReason !== "no-key" && (
-                <p className="text-[9px] font-mono text-red-400/60 bg-red-400/5 px-3 py-2 border border-red-400/10">
-                  reason: {aiDemoReason}
-                </p>
-              )}
-              {aiDemoReason === "no-key" && (
-                <p className="text-[9px] text-ivory/25">
-                  Add <code className="text-gold/50">OPENAI_API_KEY</code> to <code className="text-gold/50">.env.local</code> to enable live AI generation.
-                </p>
-              )}
-              {aiDemoReason === "timeout" && (
-                <p className="text-[9px] text-ivory/25">
-                  Try uploading a smaller or lower-resolution photo.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Error */}
-          {aiError && (
-            <div className="border border-red-400/20 px-5 py-4">
-              <p className="text-[9px] uppercase tracking-[0.3em] text-red-400/60 mb-1">Error</p>
-              <p className="text-sm text-red-400">{aiError}</p>
-            </div>
-          )}
-
-          {/* Preview area */}
-          <div className="relative min-h-[520px] border border-ivory/10 bg-ink-soft/20 flex flex-col">
-            {!photoUrl && !aiResult && (
+        {/* ── Right: canvas preview ──────────────────────────────────── */}
+        <div className="flex flex-col gap-4">
+          <div className="relative min-h-[520px] border border-ivory/10 bg-ink-soft/20">
+            {!photoUrl && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
-                <p className="text-[10px] uppercase tracking-[0.4em] text-ivory/15">AI Styling Preview</p>
+                <p className="text-[10px] uppercase tracking-[0.4em] text-ivory/15">Virtual Try-On</p>
                 <p className="font-serif text-2xl text-ivory/10">Upload a photo to begin</p>
                 <p className="text-xs text-ivory/15 max-w-xs">
-                  Upload a portrait or upper-body photo, select a necklace, then click Generate.
+                  Upload a portrait or upper-body photo — the necklace overlay will appear automatically.
                 </p>
               </div>
             )}
 
-            {/* Uploaded photo (shown before generation) */}
-            {photoUrl && !aiResult && status !== "generating" && (
-              <div className="flex flex-col items-center justify-center flex-1 p-4 gap-3">
-                <p className="text-[9px] uppercase tracking-[0.3em] text-ivory/30">Your Photo</p>
-                <div className="relative w-full max-w-md overflow-hidden border border-ivory/10">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoUrl} alt="Uploaded photo" className="w-full object-contain max-h-[60vh]" />
-                </div>
-                <p className="text-[9px] text-ivory/20">Click Generate AI Styling Preview above</p>
-              </div>
-            )}
+            <canvas
+              ref={canvasRef}
+              className="mx-auto max-h-[80vh] w-full object-contain"
+            />
 
-            {/* Generating state */}
-            {(status === "generating" || status === "api-started") && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                <p className="text-[10px] uppercase tracking-[0.4em] text-gold/60 animate-pulse">
-                  {status === "generating" ? "Preparing photo…" : "Creating your AI styling preview…"}
-                </p>
-                <p className="text-xs text-ivory/25">
-                  {status === "api-started" ? "This may take 20–60 seconds" : "Compressing image…"}
-                </p>
-              </div>
-            )}
-
-            {/* AI result */}
-            {aiResult && (
-              <div className="flex flex-col flex-1">
-                <div className="relative flex-1 min-h-[400px]">
-                  <Image
-                    src={aiResult}
-                    alt="AI Styling Preview"
-                    fill
-                    className="object-contain"
-                    unoptimized
-                  />
-                  <div className="absolute top-4 right-4 border border-ivory/10 bg-ink-deep/80 backdrop-blur-sm px-3 py-2">
-                    <p className="text-[9px] uppercase tracking-[0.3em] text-gold/60">{selectedNecklace.name}</p>
-                    {aiDemo && <p className="text-[8px] text-ivory/25 mt-0.5">Demo mode</p>}
-                  </div>
-                </div>
-
-                {/* Result actions */}
-                <div className="flex gap-3 flex-wrap p-4 border-t border-ivory/8">
-                  <button type="button" onClick={savePreview}
-                    className="border border-ivory/20 px-5 py-2.5 text-[9px] uppercase tracking-[0.2em] text-ivory/60 hover:border-gold/40 hover:text-gold transition-colors">
-                    Save Preview
-                  </button>
-                  <button type="button" onClick={sharePreview}
-                    className="border border-ivory/20 px-5 py-2.5 text-[9px] uppercase tracking-[0.2em] text-ivory/60 hover:border-gold/40 hover:text-gold transition-colors">
-                    Share
-                  </button>
-                  <Link href="/bag"
-                    className="border border-gold/30 px-5 py-2.5 text-[9px] uppercase tracking-[0.2em] text-gold hover:bg-gold/8 transition-colors">
-                    Add to Bag
-                  </Link>
-                  <button type="button" onClick={resetUpload}
-                    className="border border-ivory/10 px-5 py-2.5 text-[9px] uppercase tracking-[0.2em] text-ivory/30 hover:text-ivory/50 transition-colors">
-                    Try Another Photo
-                  </button>
-                </div>
+            {photoUrl && (
+              <div className="absolute top-4 right-4 border border-ivory/10 bg-ink-deep/80 backdrop-blur-sm px-3 py-2">
+                <p className="text-[9px] uppercase tracking-[0.3em] text-gold/60">{NECKLACE.name}</p>
               </div>
             )}
           </div>
 
           <p className="text-xs text-ivory/20">
-            AI Styling Preview · {selectedNecklace.name} · {apiKeyMissing === null ? "checking API key…" : apiKeyMissing ? "Demo mode — connect OpenAI API key for live generation" : status === "generated" ? "Live AI generation" : "Upload a photo and click Generate"}
+            Virtual Try-On · {NECKLACE.name} · {photoUrl ? "Adjust placement with controls" : "Upload a photo to start"}
           </p>
         </div>
       </div>
