@@ -14,9 +14,9 @@ export const products: Product[] = [
     material: "18k champagne gold, moissanite",
     price: 295,
     priceLabel: "From $295",
-    coverImage: "/products/09e1834a829c81bbfcc8f6a904242cad.jpg",
+    coverImage: "/products/gold-ring.jpg",
     gallery: [
-      { imageUrl: "/products/09e1834a829c81bbfcc8f6a904242cad.jpg", alt: "Aurora Celestial Band" },
+      { imageUrl: "/products/gold-ring.jpg", alt: "Aurora Celestial Band" },
     ],
     description: "A slim band scattered with star-cut stones — quiet light for evening silhouettes.",
     narrative:
