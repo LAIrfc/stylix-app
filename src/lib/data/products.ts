@@ -111,9 +111,9 @@ export const products: Product[] = [
     material: "Gold and silver, moissanite accents",
     price: 310,
     priceLabel: "From $310",
-    coverImage: "/products/微信图片_20260212130500_3_2.jpg",
+    coverImage: "/products/gold-ring.jpg",
     gallery: [
-      { imageUrl: "/products/微信图片_20260212130500_3_2.jpg", alt: "Eros Duo Stack rings" },
+      { imageUrl: "/products/gold-ring.jpg", alt: "Eros Duo Stack rings" },
     ],
     description: "Duality as design — stack, split, or gift one half.",
     narrative:
