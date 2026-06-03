@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { products } from "@/lib/data/products";
 import type { JewelryCategory, CollectionCategory } from "@/lib/types/product";
+import { track } from "@/lib/analytics/tracker";
+import { EVENTS } from "@/lib/analytics/events";
 
 // ── Collection tabs ──────────────────────────────────────────────────────────
 
@@ -147,6 +149,10 @@ export function CollectionView() {
     : "all";
 
   const [cat, setCat] = useState<JewelryCategory | "all">("all");
+
+  useEffect(() => {
+    track({ event_name: EVENTS.COLLECTION_VIEW, tool_name: activeTab });
+  }, [activeTab]);
 
   function setTab(key: CollectionTab) {
     const params = new URLSearchParams(searchParams.toString());

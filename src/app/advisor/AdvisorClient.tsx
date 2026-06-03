@@ -10,6 +10,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/context";
 import { uploadImage } from "@/lib/utils/upload";
+import { track } from "@/lib/analytics/tracker";
+import { EVENTS } from "@/lib/analytics/events";
 
 const occasions: OccasionTag[] = [
   "black-tie",
@@ -147,6 +149,7 @@ export function AdvisorClient() {
       budgetTier: budgetTier,
       jewelryCategory: jewelryCategory === "all" ? undefined : jewelryCategory,
     };
+    track({ event_name: EVENTS.ADVISOR_SUBMIT, tool_name: "ai-advisor" });
     setResult(runAdvisor(input));
   }
 

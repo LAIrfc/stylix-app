@@ -112,3 +112,25 @@ create table if not exists public.newsletter_subscribers (
 create index if not exists idx_product_tags_product on public.product_tags(product_id);
 create index if not exists idx_product_assets_product on public.product_assets(product_id);
 create index if not exists idx_advisor_results_session on public.advisor_results(session_id);
+
+-- 11. analytics_events
+create table if not exists public.analytics_events (
+  id uuid primary key default uuid_generate_v4(),
+  event_name text not null,
+  page_url text,
+  product_id text,
+  tool_name text,
+  timestamp timestamptz not null default now(),
+  anonymous_user_id text,
+  session_id text,
+  device_type text,
+  referrer text,
+  country text,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_analytics_events_event_name on public.analytics_events(event_name);
+create index if not exists idx_analytics_events_timestamp on public.analytics_events(timestamp desc);
+create index if not exists idx_analytics_events_session on public.analytics_events(session_id);
+create index if not exists idx_analytics_events_anonymous_user on public.analytics_events(anonymous_user_id);
+create index if not exists idx_analytics_events_product on public.analytics_events(product_id);

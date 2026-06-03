@@ -2,13 +2,20 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
 import { useCart } from "@/lib/cart/CartContext";
+import { track } from "@/lib/analytics/tracker";
+import { EVENTS } from "@/lib/analytics/events";
 
 const SHIPPING_THRESHOLD = 500;
 const ESTIMATED_TAX_RATE = 0.08875; // NYC rate placeholder
 
 export function BagClient() {
   const { items, subtotal, removeItem, setQuantity } = useCart();
+
+  useEffect(() => {
+    track({ event_name: EVENTS.CART_VIEW });
+  }, []);
 
   const shippingFree = subtotal >= SHIPPING_THRESHOLD;
   const estimatedTax = subtotal * ESTIMATED_TAX_RATE;

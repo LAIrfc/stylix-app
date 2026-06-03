@@ -270,7 +270,7 @@ export const en: Translations = {
     servicesLabel: "Services",
     contactLabel: "Contact",
     concierge: "Concierge:",
-    cities: "Shenzhen, China",
+    cities: "Delaware, USA",
     privacy: "Privacy",
     terms: "Terms",
     allRights: "All rights reserved.",

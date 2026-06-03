@@ -3,8 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug, products } from "@/lib/data/products";
 import { Jewelry3DPlaceholder } from "@/components/product/Jewelry3DPlaceholder";
+import { Jewelry3DViewer } from "@/components/product/Jewelry3DViewer";
 import { ButtonLink } from "@/components/ui/Button";
 import { AddToBag } from "@/components/product/AddToBag";
+import { ProductPageTracker } from "@/components/product/ProductPageTracker";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -23,6 +25,7 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <div className="pt-24">
+      <ProductPageTracker productId={product.id} />
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10 lg:py-16">
         <div className="grid gap-12 lg:grid-cols-2">
 
@@ -41,7 +44,11 @@ export default async function ProductPage({ params }: Props) {
             <div className="mt-10">
               <p className="text-[10px] uppercase tracking-[0.3em] text-gold/60">3D Preview</p>
               <div className="mt-4 max-w-md">
-                <Jewelry3DPlaceholder label={`${product.name} · 3D asset`} />
+                {product.model3D ? (
+                  <Jewelry3DViewer modelUrl={product.model3D} fallbackImageUrl={product.coverImage} />
+                ) : (
+                  <Jewelry3DPlaceholder label={`${product.name} · 3D asset`} />
+                )}
               </div>
             </div>
           </div>

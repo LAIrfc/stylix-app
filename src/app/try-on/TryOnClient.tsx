@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
+import { track } from "@/lib/analytics/tracker";
+import { EVENTS } from "@/lib/analytics/events";
 
 // ── Product data ──────────────────────────────────────────────────────────────
 const NECKLACE = {
@@ -66,6 +68,10 @@ export function TryOnClient() {
   const [photoFileName, setPhotoFileName] = useState<string | null>(null);
   const [detecting, setDetecting] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+
+  useEffect(() => {
+    track({ event_name: EVENTS.TRYON_START, tool_name: "virtual-try-on" });
+  }, []);
 
   // Store raw landmarks for debug overlay
   const landmarksRef = useRef<{ x: number; y: number }[] | null>(null);

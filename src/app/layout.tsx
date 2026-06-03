@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { I18nProvider } from "@/lib/i18n/context";
 import { CartProvider } from "@/lib/cart/CartContext";
 import { OrderProvider } from "@/lib/order/OrderContext";
+import { AnalyticsPageView } from "@/lib/analytics/AnalyticsPageView";
 
 const serif = Cormorant_Garamond({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function RootLayout({
         <I18nProvider>
           <CartProvider>
             <OrderProvider>
+              <AnalyticsPageView />
               <SiteHeader />
               <main>{children}</main>
               <SiteFooter />

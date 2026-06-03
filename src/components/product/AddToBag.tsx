@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart/CartContext";
 import type { Product } from "@/lib/types/product";
+import { track } from "@/lib/analytics/tracker";
+import { EVENTS } from "@/lib/analytics/events";
 
 export function AddToBag({ product }: { product: Product }) {
   const { addItem, items } = useCart();
@@ -14,6 +16,7 @@ export function AddToBag({ product }: { product: Product }) {
   function handleAdd() {
     addItem(product);
     setAdded(true);
+    track({ event_name: EVENTS.ADD_TO_CART, product_id: product.id });
     setTimeout(() => setAdded(false), 2000);
   }
 

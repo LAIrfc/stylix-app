@@ -268,7 +268,7 @@ export const fr: Translations = {
     servicesLabel: "Services",
     contactLabel: "Contact",
     concierge: "Conciergerie :",
-    cities: "Shenzhen, Chine",
+    cities: "Delaware, USA",
     privacy: "Confidentialité",
     terms: "Conditions",
     allRights: "Tous droits réservés.",

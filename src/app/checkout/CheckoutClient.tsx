@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart/CartContext";
 import { useOrder, generateOrderId, type OrderSummary } from "@/lib/order/OrderContext";
+import { track } from "@/lib/analytics/tracker";
+import { EVENTS } from "@/lib/analytics/events";
 
 type PaymentMethod = "card" | "apple-pay" | "paypal";
 
@@ -81,6 +83,13 @@ export function CheckoutClient() {
   const estimatedTax = subtotal * ESTIMATED_TAX_RATE;
   const estimatedTotal = subtotal + estimatedTax;
 
+  useEffect(() => {
+    if (items.length > 0) {
+      track({ event_name: EVENTS.CHECKOUT_START });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-32 lg:px-10 text-center">
@@ -99,6 +108,7 @@ export function CheckoutClient() {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    track({ event_name: EVENTS.CHECKOUT_SUBMIT });
 
     const form = e.currentTarget;
     const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement)?.value ?? "";
@@ -156,6 +166,7 @@ export function CheckoutClient() {
 
       setOrder(order);
       clearCart();
+      track({ event_name: EVENTS.PURCHASE });
 
       // Live Stripe: redirect to hosted checkout
       if (data.url && !data.mock) {
