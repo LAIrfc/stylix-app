@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export interface AnalyticsEvent {
   event_name: string;
@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
 
     let insertError;
     try {
-      const result = await supabaseAdmin.from("analytics_events").insert(rows);
+      const db = getSupabaseAdmin();
+      const result = await db.from("analytics_events").insert(rows);
       insertError = result.error;
     } catch (clientErr) {
       console.error("[analytics] supabase client error:", clientErr);

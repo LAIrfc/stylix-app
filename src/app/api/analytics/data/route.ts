@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 const SUPABASE_CONFIGURED =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -19,6 +19,14 @@ export async function GET(req: NextRequest) {
   if (token !== adminPassword) return unauthorized();
 
   if (!SUPABASE_CONFIGURED) {
+    return NextResponse.json({ demo: true, message: "Supabase not configured." });
+  }
+
+  let db: ReturnType<typeof getSupabaseAdmin>;
+  try {
+    db = getSupabaseAdmin();
+  } catch (err) {
+    console.error("[analytics/data] supabase init error:", err);
     return NextResponse.json({ demo: true, message: "Supabase not configured." });
   }
 
@@ -50,12 +58,12 @@ export async function GET(req: NextRequest) {
   }
   // "all" → sinceIso stays null (no date filter applied)
 
-  function applyRange<T extends ReturnType<typeof supabaseAdmin.from>>(q: T): T {
+  function applyRange<T extends ReturnType<typeof db.from>>(q: T): T {
     if (sinceIso) return (q as unknown as { gte: (col: string, val: string) => T }).gte("timestamp", sinceIso);
     return q;
   }
 
-  const base = () => supabaseAdmin.from("analytics_events");
+  const base = () => db.from("analytics_events");
 
   const [
     totalEventsRes,
