@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, stored: false });
     }
 
+    const now = new Date().toISOString();
     const rows = events.map((ev) => ({
       event_name: ev.event_name,
       page_url: ev.page_url ?? null,
@@ -50,12 +51,13 @@ export async function POST(req: NextRequest) {
       device_type: ev.device_type ?? null,
       referrer: ev.referrer ?? null,
       country: ev.country ?? null,
+      timestamp: now,
     }));
 
     const { error } = await supabaseAdmin.from("analytics_events").insert(rows);
 
     if (error) {
-      console.error("[analytics] insert error:", error.message);
+      console.error("[analytics] insert error:", error.message, JSON.stringify(rows[0]));
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

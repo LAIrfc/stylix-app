@@ -4,6 +4,16 @@
 const ANON_ID_KEY = "stylix_anon_id";
 const SESSION_ID_KEY = "stylix_session_id";
 
+// Commerce events that must flush immediately, not wait for the 2s batch timer.
+const IMMEDIATE_EVENTS = new Set([
+  "product_view",
+  "add_to_cart",
+  "cart_view",
+  "checkout_start",
+  "checkout_submit",
+  "purchase",
+]);
+
 function uuid(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -45,7 +55,7 @@ export interface TrackEventOptions {
   tool_name?: string;
 }
 
-// Queue for batching — flush every 2s or when queue reaches 10
+// Queue for batching non-critical events — flush every 2s or when queue reaches 10.
 let queue: object[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -59,14 +69,37 @@ async function flush() {
   if (!queue.length) return;
   const batch = queue.splice(0);
   try {
-    await fetch("/api/analytics", {
+    const res = await fetch("/api/analytics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(batch),
       keepalive: true,
     });
-  } catch {
-    // Silently fail — analytics must never break the app
+    if (!res.ok) {
+      console.error("[analytics] flush failed:", res.status, await res.text().catch(() => ""));
+      // Re-queue so events aren't silently lost
+      queue.unshift(...batch);
+    }
+  } catch (err) {
+    console.error("[analytics] flush error:", err);
+    // Re-queue so events aren't silently lost
+    queue.unshift(...batch);
+  }
+}
+
+async function flushImmediate(events: object[]) {
+  try {
+    const res = await fetch("/api/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(events),
+      keepalive: true,
+    });
+    if (!res.ok) {
+      console.error("[analytics] immediate flush failed:", res.status, await res.text().catch(() => ""));
+    }
+  } catch (err) {
+    console.error("[analytics] immediate flush error:", err);
   }
 }
 
@@ -82,8 +115,14 @@ export function track(opts: TrackEventOptions) {
     session_id: getSessionId(),
     device_type: getDeviceType(),
     referrer: document.referrer || null,
-    country: null, // resolved server-side if needed
+    country: null,
   };
+
+  if (IMMEDIATE_EVENTS.has(opts.event_name)) {
+    // Fire immediately — don't batch commerce events
+    flushImmediate([event]);
+    return;
+  }
 
   queue.push(event);
 
