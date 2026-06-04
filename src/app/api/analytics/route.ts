@@ -54,11 +54,18 @@ export async function POST(req: NextRequest) {
       timestamp: now,
     }));
 
-    const { error } = await supabaseAdmin.from("analytics_events").insert(rows);
+    let insertError;
+    try {
+      const result = await supabaseAdmin.from("analytics_events").insert(rows);
+      insertError = result.error;
+    } catch (clientErr) {
+      console.error("[analytics] supabase client error:", clientErr);
+      return NextResponse.json({ ok: true, stored: false });
+    }
 
-    if (error) {
-      console.error("[analytics] insert error:", error.message, JSON.stringify(rows[0]));
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (insertError) {
+      console.error("[analytics] insert error:", insertError.message, JSON.stringify(rows[0]));
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, stored: true });
