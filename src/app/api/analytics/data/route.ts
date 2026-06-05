@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_CONFIGURED =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -22,9 +22,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ demo: true, message: "Supabase not configured." });
   }
 
-  let db: ReturnType<typeof getSupabaseAdmin>;
+  let db: ReturnType<typeof createClient>;
   try {
-    db = getSupabaseAdmin();
+    const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/+$/, "");
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+    db = createClient(url, key);
   } catch (err) {
     console.error("[analytics/data] supabase init error:", err);
     return NextResponse.json({ demo: true, message: "Supabase not configured." });

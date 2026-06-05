@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 export interface AnalyticsEvent {
   event_name: string;
@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Validate required field
     for (const ev of events) {
       if (!ev.event_name || typeof ev.event_name !== "string") {
         return NextResponse.json({ error: "event_name required" }, { status: 400 });
@@ -36,7 +35,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (!SUPABASE_CONFIGURED) {
-      // Supabase not yet configured — silently accept events so the app works
+      return NextResponse.json({ ok: true, stored: false });
+    }
+
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/+$/, "");
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+
+    // Validate URL before passing to createClient — malformed URL throws inside supabase-js
+    try {
+      new URL(supabaseUrl);
+    } catch {
+      console.error("[analytics] invalid NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl);
       return NextResponse.json({ ok: true, stored: false });
     }
 
@@ -56,11 +65,12 @@ export async function POST(req: NextRequest) {
 
     let insertError;
     try {
-      const db = getSupabaseAdmin();
+      const db = createClient(supabaseUrl, supabaseKey);
       const result = await db.from("analytics_events").insert(rows);
       insertError = result.error;
     } catch (clientErr) {
-      console.error("[analytics] supabase client error:", clientErr);
+      const maskedUrl = supabaseUrl.replace(/https:\/\/([^.]+)\..*/, "https://$1.***");
+      console.error("[analytics] supabase client error (url:", maskedUrl, "):", clientErr);
       return NextResponse.json({ ok: true, stored: false });
     }
 
