@@ -3,6 +3,7 @@ export const EVENTS = {
   PAGE_VIEW: "page_view",
   COLLECTION_VIEW: "collection_view",
   PRODUCT_VIEW: "product_view",
+  VIEW_3D_OPEN: "3d_view_open",
   VIEWER_3D_OPEN: "3d_viewer_open",
   VIEWER_3D_INTERACT: "3d_viewer_interact",
   TRYON_START: "tryon_start",

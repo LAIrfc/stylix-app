@@ -76,6 +76,10 @@ export interface Product {
   customizationOptions?: string[];
   /** Display image used on collection/product cards. NOT used as AR overlay. */
   coverImage: string;
+  /** Optional GLB/GLTF model used by the product detail 360-degree viewer. */
+  modelUrl?: string;
+  /** Backward-compatible alias for imported catalogs that use model3dUrl. */
+  model3dUrl?: string;
   gallery: ProductAsset[];
   tags: ProductTags;
   isFeatured: boolean;
@@ -95,6 +99,7 @@ export interface Product {
    * When present, the 3D renderer takes over from the 2D PNG overlay.
    * Naming convention: /public/models/{slug}.glb
    */
+  /** @deprecated Use `modelUrl` for product detail viewing. */
   model3D?: string;
   /** Designer or brand that created this piece (e.g. "Kiki Wang Jewelry"). */
   collaboratorName?: string;

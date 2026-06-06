@@ -15,6 +15,7 @@ export const products: Product[] = [
     price: 295,
     priceLabel: "From $295",
     coverImage: "/products/gold-ring.jpg",
+    modelUrl: "/models/aurora-celestial-band.glb",
     gallery: [
       { imageUrl: "/products/gold-ring.jpg", alt: "Aurora Celestial Band" },
     ],

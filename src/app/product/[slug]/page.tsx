@@ -2,8 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug, products } from "@/lib/data/products";
-import { Jewelry3DPlaceholder } from "@/components/product/Jewelry3DPlaceholder";
-import { Jewelry3DViewer } from "@/components/product/Jewelry3DViewer";
+import { Product3DViewer } from "@/components/product/Product3DViewer";
 import { ButtonLink } from "@/components/ui/Button";
 import { AddToBag } from "@/components/product/AddToBag";
 import { ProductPageTracker } from "@/components/product/ProductPageTracker";
@@ -22,6 +21,7 @@ export default async function ProductPage({ params }: Props) {
   const related = products
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 3);
+  const modelUrl = product.modelUrl ?? product.model3dUrl ?? product.model3D;
 
   return (
     <div className="pt-24">
@@ -44,11 +44,12 @@ export default async function ProductPage({ params }: Props) {
             <div className="mt-10">
               <p className="text-[10px] uppercase tracking-[0.3em] text-gold/60">3D Preview</p>
               <div className="mt-4 max-w-md">
-                {product.model3D ? (
-                  <Jewelry3DViewer modelUrl={product.model3D} fallbackImageUrl={product.coverImage} />
-                ) : (
-                  <Jewelry3DPlaceholder label={`${product.name} · 3D asset`} />
-                )}
+                <Product3DViewer
+                  modelUrl={modelUrl}
+                  fallbackImageUrl={product.coverImage}
+                  productName={product.name}
+                  productId={product.id}
+                />
               </div>
             </div>
           </div>
