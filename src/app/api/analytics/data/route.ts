@@ -1,14 +1,134 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { EVENTS } from "@/lib/analytics/events";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
-const SUPABASE_CONFIGURED =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://your-project.supabase.co" &&
-  process.env.SUPABASE_SERVICE_ROLE_KEY &&
-  process.env.SUPABASE_SERVICE_ROLE_KEY !== "your-service-role-key";
+const PAGE_SIZE = 1000;
+const ANALYTICS_SELECT =
+  "id, event_name, page_url, product_id, tool_name, timestamp, anonymous_user_id, session_id, device_type, referrer, country";
+
+type AnalyticsRange = "today" | "7d" | "30d" | "90d" | "6m" | "12m" | "all";
+
+interface AnalyticsEventRow {
+  id: string;
+  event_name: string;
+  page_url: string | null;
+  product_id: string | null;
+  tool_name: string | null;
+  timestamp: string;
+  anonymous_user_id: string | null;
+  session_id: string | null;
+  device_type: string | null;
+  referrer: string | null;
+  country: string | null;
+}
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+function getRange(value: string | null): AnalyticsRange {
+  if (
+    value === "today" ||
+    value === "7d" ||
+    value === "30d" ||
+    value === "90d" ||
+    value === "6m" ||
+    value === "12m" ||
+    value === "all"
+  ) {
+    return value;
+  }
+  return "30d";
+}
+
+function getSinceIso(range: AnalyticsRange): string | null {
+  const now = new Date();
+  const since = new Date(now);
+
+  if (range === "today") {
+    since.setHours(0, 0, 0, 0);
+    return since.toISOString();
+  }
+  if (range === "7d") {
+    since.setDate(since.getDate() - 7);
+    return since.toISOString();
+  }
+  if (range === "30d") {
+    since.setDate(since.getDate() - 30);
+    return since.toISOString();
+  }
+  if (range === "90d") {
+    since.setDate(since.getDate() - 90);
+    return since.toISOString();
+  }
+  if (range === "6m") {
+    since.setMonth(since.getMonth() - 6);
+    return since.toISOString();
+  }
+  if (range === "12m") {
+    since.setMonth(since.getMonth() - 12);
+    return since.toISOString();
+  }
+  return null;
+}
+
+function increment(counts: Record<string, number>, key: string | null | undefined) {
+  if (!key) return;
+  counts[key] = (counts[key] ?? 0) + 1;
+}
+
+function sortCounts(counts: Record<string, number>, limit: number) {
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+}
+
+function countEvents(rows: AnalyticsEventRow[], eventName: string) {
+  return rows.filter((row) => row.event_name === eventName).length;
+}
+
+async function fetchAnalyticsEvents(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  sinceIso: string | null
+): Promise<AnalyticsEventRow[]> {
+  const rows: AnalyticsEventRow[] = [];
+  let from = 0;
+
+  while (true) {
+    let query = db
+      .schema("public")
+      .from("analytics_events")
+      .select(ANALYTICS_SELECT)
+      .order("timestamp", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (sinceIso) {
+      query = query.gte("timestamp", sinceIso);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("[analytics/data] analytics_events query failed", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        since: sinceIso,
+        from,
+        to: from + PAGE_SIZE - 1,
+      });
+      throw new Error(error.message);
+    }
+
+    const batch = (data ?? []) as AnalyticsEventRow[];
+    rows.push(...batch);
+
+    if (batch.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return rows;
 }
 
 export async function GET(req: NextRequest) {
@@ -18,225 +138,92 @@ export async function GET(req: NextRequest) {
 
   if (token !== adminPassword) return unauthorized();
 
-  if (!SUPABASE_CONFIGURED) {
-    return NextResponse.json({ demo: true, message: "Supabase not configured." });
-  }
-
-  let db: ReturnType<typeof createClient>;
-  try {
-    const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/+$/, "");
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-    db = createClient(url, key);
-  } catch (err) {
-    console.error("[analytics/data] supabase init error:", err);
-    return NextResponse.json({ demo: true, message: "Supabase not configured." });
-  }
-
   const { searchParams } = new URL(req.url);
-  const range = searchParams.get("range") ?? "30d";
+  const range = getRange(searchParams.get("range"));
+  const sinceIso = getSinceIso(range);
 
-  const now = new Date();
-  const since = new Date(now);
-  let sinceIso: string | null = null;
-
-  if (range === "today") {
-    since.setHours(0, 0, 0, 0);
-    sinceIso = since.toISOString();
-  } else if (range === "7d") {
-    since.setDate(since.getDate() - 7);
-    sinceIso = since.toISOString();
-  } else if (range === "30d") {
-    since.setDate(since.getDate() - 30);
-    sinceIso = since.toISOString();
-  } else if (range === "90d") {
-    since.setDate(since.getDate() - 90);
-    sinceIso = since.toISOString();
-  } else if (range === "6m") {
-    since.setMonth(since.getMonth() - 6);
-    sinceIso = since.toISOString();
-  } else if (range === "12m") {
-    since.setMonth(since.getMonth() - 12);
-    sinceIso = since.toISOString();
+  let rows: AnalyticsEventRow[];
+  try {
+    const db = getSupabaseAdmin();
+    rows = await fetchAnalyticsEvents(db, sinceIso);
+  } catch (err) {
+    console.error("[analytics/data] failed to load analytics_events", err);
+    return NextResponse.json({ error: "Analytics data unavailable" }, { status: 500 });
   }
-  // "all" → sinceIso stays null (no date filter applied)
-
-  function applyRange<T extends ReturnType<typeof db.from>>(q: T): T {
-    if (sinceIso) return (q as unknown as { gte: (col: string, val: string) => T }).gte("timestamp", sinceIso);
-    return q;
-  }
-
-  const base = () => db.from("analytics_events");
-
-  const [
-    totalEventsRes,
-    uniqueVisitorsRes,
-    uniqueSessionsRes,
-    topPagesRes,
-    topProductsRes,
-    toolUsageRes,
-    funnelRes,
-    summaryCountsRes,
-    journeyRes,
-  ] = await Promise.all([
-    // Total events
-    (() => {
-      const q = base().select("id", { count: "exact", head: true });
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-
-    // Unique visitors
-    (() => {
-      const q = base().select("anonymous_user_id").not("anonymous_user_id", "is", null);
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-
-    // Unique sessions
-    (() => {
-      const q = base().select("session_id").not("session_id", "is", null);
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-
-    // Top pages
-    (() => {
-      const q = base().select("page_url").eq("event_name", "page_view").not("page_url", "is", null);
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-
-    // Top products
-    (() => {
-      const q = base().select("product_id").eq("event_name", "product_view").not("product_id", "is", null);
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-
-    // Tool usage
-    (() => {
-      const q = base()
-        .select("event_name")
-        .in("event_name", [
-          "3d_viewer_open", "3d_viewer_interact",
-          "tryon_start", "tryon_complete",
-          "advisor_submit", "advisor_result_view",
-        ]);
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-
-    // Full funnel
-    (() => {
-      const q = base()
-        .select("event_name")
-        .in("event_name", [
-          "page_view", "product_view",
-          "add_to_cart", "cart_view",
-          "checkout_start", "checkout_submit", "purchase",
-        ]);
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-
-    // KPI summary counts (product_views, tool uses, add_to_cart, checkout_start, purchase)
-    (() => {
-      const q = base()
-        .select("event_name")
-        .in("event_name", [
-          "product_view", "3d_viewer_open", "tryon_start", "advisor_submit",
-          "add_to_cart", "checkout_start", "purchase",
-        ]);
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-
-    // Journey log — last 200
-    (() => {
-      const q = base()
-        .select("event_name, page_url, product_id, tool_name, timestamp, anonymous_user_id, session_id, device_type, referrer, country")
-        .order("timestamp", { ascending: false })
-        .limit(200);
-      return sinceIso ? q.gte("timestamp", sinceIso) : q;
-    })(),
-  ]);
 
   // Aggregate top pages
   const pageCounts: Record<string, number> = {};
-  for (const row of topPagesRes.data ?? []) {
-    const url = row.page_url as string;
-    pageCounts[url] = (pageCounts[url] ?? 0) + 1;
+  for (const row of rows) {
+    if (row.event_name === EVENTS.PAGE_VIEW) {
+      increment(pageCounts, row.page_url);
+    }
   }
-  const topPages = Object.entries(pageCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
+  const topPages = sortCounts(pageCounts, 10)
     .map(([url, count]) => ({ url, count }));
   const totalPageViews = Object.values(pageCounts).reduce((a, b) => a + b, 0);
 
   // Aggregate top products
   const productCounts: Record<string, number> = {};
-  for (const row of topProductsRes.data ?? []) {
-    const id = row.product_id as string;
-    productCounts[id] = (productCounts[id] ?? 0) + 1;
+  for (const row of rows) {
+    if (row.event_name === EVENTS.PRODUCT_VIEW) {
+      increment(productCounts, row.product_id);
+    }
   }
-  const topProducts = Object.entries(productCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
+  const topProducts = sortCounts(productCounts, 10)
     .map(([productId, count]) => ({ productId, count }));
 
   // Aggregate tool usage
   const toolCounts: Record<string, number> = {};
-  for (const row of toolUsageRes.data ?? []) {
-    const key = row.event_name as string;
-    toolCounts[key] = (toolCounts[key] ?? 0) + 1;
+  for (const row of rows) {
+    increment(toolCounts, row.event_name);
   }
 
   // Aggregate funnel
   const funnelCounts: Record<string, number> = {};
-  for (const row of funnelRes.data ?? []) {
-    const key = row.event_name as string;
-    funnelCounts[key] = (funnelCounts[key] ?? 0) + 1;
+  for (const row of rows) {
+    increment(funnelCounts, row.event_name);
   }
 
-  // Aggregate KPI summary
-  const kpiCounts: Record<string, number> = {};
-  for (const row of summaryCountsRes.data ?? []) {
-    const key = row.event_name as string;
-    kpiCounts[key] = (kpiCounts[key] ?? 0) + 1;
-  }
-
-  const uniqueVisitors = new Set((uniqueVisitorsRes.data ?? []).map((r) => r.anonymous_user_id)).size;
-  const uniqueSessions = new Set((uniqueSessionsRes.data ?? []).map((r) => r.session_id)).size;
+  const uniqueVisitors = new Set(rows.map((row) => row.anonymous_user_id).filter(Boolean)).size;
+  const uniqueSessions = new Set(rows.map((row) => row.session_id).filter(Boolean)).size;
 
   return NextResponse.json({
     demo: false,
     range,
     since: sinceIso,
     summary: {
-      totalEvents: totalEventsRes.count ?? 0,
+      totalEvents: rows.length,
       uniqueVisitors,
       uniqueSessions,
-      productViews: kpiCounts["product_view"] ?? 0,
+      productViews: countEvents(rows, EVENTS.PRODUCT_VIEW),
       toolUses:
-        (kpiCounts["3d_viewer_open"] ?? 0) +
-        (kpiCounts["tryon_start"] ?? 0) +
-        (kpiCounts["advisor_submit"] ?? 0),
-      addToCart: kpiCounts["add_to_cart"] ?? 0,
-      checkoutStart: kpiCounts["checkout_start"] ?? 0,
-      purchases: kpiCounts["purchase"] ?? 0,
+        countEvents(rows, EVENTS.VIEWER_3D_OPEN) +
+        countEvents(rows, EVENTS.TRYON_START) +
+        countEvents(rows, EVENTS.ADVISOR_SUBMIT),
+      addToCart: countEvents(rows, EVENTS.ADD_TO_CART),
+      checkoutStart: countEvents(rows, EVENTS.CHECKOUT_START),
+      purchases: countEvents(rows, EVENTS.PURCHASE),
     },
     topPages,
     totalPageViews,
     topProducts,
     toolUsage: {
-      viewer3dOpen: toolCounts["3d_viewer_open"] ?? 0,
-      viewer3dInteract: toolCounts["3d_viewer_interact"] ?? 0,
-      tryonStart: toolCounts["tryon_start"] ?? 0,
-      tryonComplete: toolCounts["tryon_complete"] ?? 0,
-      advisorSubmit: toolCounts["advisor_submit"] ?? 0,
-      advisorResultView: toolCounts["advisor_result_view"] ?? 0,
+      viewer3dOpen: toolCounts[EVENTS.VIEWER_3D_OPEN] ?? 0,
+      viewer3dInteract: toolCounts[EVENTS.VIEWER_3D_INTERACT] ?? 0,
+      tryonStart: toolCounts[EVENTS.TRYON_START] ?? 0,
+      tryonComplete: toolCounts[EVENTS.TRYON_COMPLETE] ?? 0,
+      advisorSubmit: toolCounts[EVENTS.ADVISOR_SUBMIT] ?? 0,
+      advisorResultView: toolCounts[EVENTS.ADVISOR_RESULT_VIEW] ?? 0,
     },
     funnel: {
-      pageView: funnelCounts["page_view"] ?? 0,
-      productView: funnelCounts["product_view"] ?? 0,
-      addToCart: funnelCounts["add_to_cart"] ?? 0,
-      cartView: funnelCounts["cart_view"] ?? 0,
-      checkoutStart: funnelCounts["checkout_start"] ?? 0,
-      checkoutSubmit: funnelCounts["checkout_submit"] ?? 0,
-      purchase: funnelCounts["purchase"] ?? 0,
+      pageView: funnelCounts[EVENTS.PAGE_VIEW] ?? 0,
+      productView: funnelCounts[EVENTS.PRODUCT_VIEW] ?? 0,
+      addToCart: funnelCounts[EVENTS.ADD_TO_CART] ?? 0,
+      cartView: funnelCounts[EVENTS.CART_VIEW] ?? 0,
+      checkoutStart: funnelCounts[EVENTS.CHECKOUT_START] ?? 0,
+      checkoutSubmit: funnelCounts[EVENTS.CHECKOUT_SUBMIT] ?? 0,
+      purchase: funnelCounts[EVENTS.PURCHASE] ?? 0,
     },
-    journey: journeyRes.data ?? [],
+    journey: rows.slice(0, 200),
   });
 }
