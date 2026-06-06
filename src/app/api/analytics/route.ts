@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export interface AnalyticsEvent {
   event_name: string;
@@ -12,12 +12,6 @@ export interface AnalyticsEvent {
   referrer?: string;
   country?: string;
 }
-
-const SUPABASE_CONFIGURED =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://your-project.supabase.co" &&
-  process.env.SUPABASE_SERVICE_ROLE_KEY &&
-  process.env.SUPABASE_SERVICE_ROLE_KEY !== "your-service-role-key";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,21 +28,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!SUPABASE_CONFIGURED) {
-      return NextResponse.json({ ok: true, stored: false });
-    }
-
-    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/+$/, "");
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-    // Validate URL before passing to createClient — malformed URL throws inside supabase-js
-    try {
-      new URL(supabaseUrl);
-    } catch {
-      console.error("[analytics] invalid NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl);
-      return NextResponse.json({ ok: true, stored: false });
-    }
-
     const now = new Date().toISOString();
     const rows = events.map((ev) => ({
       event_name: ev.event_name,
@@ -63,19 +42,18 @@ export async function POST(req: NextRequest) {
       timestamp: now,
     }));
 
-    let insertError;
-    try {
-      const db = createClient(supabaseUrl, supabaseKey);
-      const result = await db.from("analytics_events").insert(rows);
-      insertError = result.error;
-    } catch (clientErr) {
-      const maskedUrl = supabaseUrl.replace(/https:\/\/([^.]+)\..*/, "https://$1.***");
-      console.error("[analytics] supabase client error (url:", maskedUrl, "):", clientErr);
-      return NextResponse.json({ ok: true, stored: false });
-    }
+    const db = getSupabaseAdmin();
+    const { error: insertError } = await db.schema("public").from("analytics_events").insert(rows);
 
     if (insertError) {
-      console.error("[analytics] insert error:", insertError.message, JSON.stringify(rows[0]));
+      console.error("[analytics] Supabase insert failed", {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        eventCount: rows.length,
+        firstEvent: rows[0],
+      });
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
