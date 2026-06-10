@@ -87,3 +87,13 @@ export interface DbNewsletterSubscriber {
   email: string;
   created_at: string;
 }
+
+export interface DbEarlyAccessWaitlistUser {
+  id: string;
+  email: string;
+  name: string | null;
+  country: string;
+  gender: "female" | "male" | "non-binary" | "prefer-not-to-say";
+  source: string | null;
+  created_at: string;
+}

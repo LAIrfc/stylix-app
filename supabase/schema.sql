@@ -109,11 +109,29 @@ create table if not exists public.newsletter_subscribers (
   created_at timestamptz default now()
 );
 
+-- 11. early_access_waitlist
+create table if not exists public.early_access_waitlist (
+  id uuid primary key default uuid_generate_v4(),
+  email text unique not null,
+  name text,
+  country text not null,
+  gender text not null check (gender in ('female', 'male', 'non-binary', 'prefer-not-to-say')),
+  source text,
+  created_at timestamptz default now()
+);
+
+alter table public.early_access_waitlist
+  add column if not exists name text;
+
+alter table public.early_access_waitlist
+  add column if not exists source text;
+
 create index if not exists idx_product_tags_product on public.product_tags(product_id);
 create index if not exists idx_product_assets_product on public.product_assets(product_id);
 create index if not exists idx_advisor_results_session on public.advisor_results(session_id);
+create index if not exists idx_early_access_waitlist_created_at on public.early_access_waitlist(created_at desc);
 
--- 11. analytics_events
+-- 12. analytics_events
 create table if not exists public.analytics_events (
   id uuid primary key default uuid_generate_v4(),
   event_name text not null,

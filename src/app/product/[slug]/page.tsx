@@ -1,19 +1,69 @@
 import Image from "next/image";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { getProductBySlug, products } from "@/lib/data/products";
 import { Product3DViewer } from "@/components/product/Product3DViewer";
 import { ButtonLink } from "@/components/ui/Button";
 import { AddToBag } from "@/components/product/AddToBag";
 import { ProductPageTracker } from "@/components/product/ProductPageTracker";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
+import type { Product } from "@/lib/types/product";
+import { isValidGlbUrl } from "@/lib/utils/model3d";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+async function getStoredModel3dUrl(product: Product) {
+  try {
+    const db = getSupabaseAdmin();
+    const { data: dbProduct, error: productError } = await db
+      .schema("public")
+      .from("products")
+      .select("id")
+      .eq("slug", product.slug)
+      .maybeSingle();
+
+    if (productError) {
+      console.error("[product/3d] product lookup failed", {
+        slug: product.slug,
+        message: productError.message,
+      });
+      return null;
+    }
+
+    const productId = (dbProduct as { id?: string } | null)?.id;
+    if (!productId) return null;
+
+    const { data: asset, error: assetError } = await db
+      .schema("public")
+      .from("product_assets")
+      .select("model_3d_url")
+      .eq("product_id", productId)
+      .not("model_3d_url", "is", null)
+      .limit(1)
+      .maybeSingle();
+
+    if (assetError) {
+      console.error("[product/3d] model asset lookup failed", {
+        slug: product.slug,
+        message: assetError.message,
+      });
+      return null;
+    }
+
+    const model3dUrl = (asset as { model_3d_url?: string | null } | null)?.model_3d_url ?? null;
+    return isValidGlbUrl(model3dUrl) ? model3dUrl : null;
+  } catch (err) {
+    console.error("[product/3d] stored model lookup skipped", err);
+    return null;
+  }
 }
 
 export default async function ProductPage({ params }: Props) {
+  noStore();
   const { slug } = await params;
   const product = getProductBySlug(slug);
   if (!product) notFound();
@@ -21,7 +71,9 @@ export default async function ProductPage({ params }: Props) {
   const related = products
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 3);
-  const modelUrl = product.modelUrl ?? product.model3dUrl ?? product.model3D;
+  const catalogModelUrl = product.model3dUrl ?? product.modelUrl ?? product.model3D ?? null;
+  const storedModelUrl = await getStoredModel3dUrl(product);
+  const modelUrl = storedModelUrl ?? (isValidGlbUrl(catalogModelUrl) ? catalogModelUrl : null);
 
   return (
     <div className="pt-24">
@@ -41,17 +93,18 @@ export default async function ProductPage({ params }: Props) {
                 sizes="50vw"
               />
             </div>
-            <div className="mt-10">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-gold/60">3D Preview</p>
-              <div className="mt-4 max-w-md">
-                <Product3DViewer
-                  modelUrl={modelUrl}
-                  fallbackImageUrl={product.coverImage}
-                  productName={product.name}
-                  productId={product.id}
-                />
+            {modelUrl && (
+              <div className="mt-10">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-gold/60">3D Preview</p>
+                <div className="mt-4 max-w-md">
+                  <Product3DViewer
+                    modelUrl={modelUrl}
+                    productName={product.name}
+                    productId={product.id}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* ── Right: identity + product detail ──────────────────── */}

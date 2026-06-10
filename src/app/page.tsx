@@ -5,6 +5,7 @@ import { CollectionPreview } from "@/components/home/CollectionPreview";
 import { AdvisorSplit } from "@/components/home/AdvisorSplit";
 import { FeaturedDesigner } from "@/components/home/FeaturedDesigner";
 import { VipTeaser } from "@/components/home/VipTeaser";
+import { EarlyAccessWaitlist } from "@/components/home/EarlyAccessWaitlist";
 import { StayUpdated } from "@/components/home/StayUpdated";
 
 export default function HomePage() {
@@ -31,7 +32,10 @@ export default function HomePage() {
       {/* 7. Private Atelier access */}
       <VipTeaser />
 
-      {/* 8. Newsletter */}
+      {/* 8. Early access waitlist */}
+      <EarlyAccessWaitlist />
+
+      {/* 9. Newsletter */}
       <StayUpdated />
     </>
   );

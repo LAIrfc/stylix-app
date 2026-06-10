@@ -1,209 +1,187 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { createElement, useEffect, useRef, useState } from "react";
 import { EVENTS } from "@/lib/analytics/events";
 import { track } from "@/lib/analytics/tracker";
+import { isValidGlbUrl } from "@/lib/utils/model3d";
 
 interface Product3DViewerProps {
-  modelUrl?: string | null;
-  fallbackImageUrl: string;
+  modelUrl: string;
   productName: string;
   productId?: string;
 }
 
-function FallbackImage({
-  fallbackImageUrl,
-  productName,
-}: {
-  fallbackImageUrl: string;
-  productName: string;
-}) {
-  return (
-    <div
-      className="relative aspect-square w-full max-w-md overflow-hidden border border-ivory/10 bg-ink-soft"
-      data-product-3d-fallback
-    >
-      <Image
-        src={fallbackImageUrl}
-        alt={productName}
-        fill
-        className="object-contain object-center"
-        sizes="(min-width: 1024px) 28rem, 100vw"
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(5,5,5,0.58)_100%)]" />
-      <p className="pointer-events-none absolute bottom-4 left-0 right-0 text-center text-[9px] uppercase tracking-[0.35em] text-ivory/30">
-        Product image
-      </p>
-    </div>
-  );
-}
-
-function disposeObject(object: THREE.Object3D) {
-  object.traverse((child) => {
-    if (!(child as THREE.Mesh).isMesh) return;
-
-    const mesh = child as THREE.Mesh;
-    mesh.geometry.dispose();
-
-    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const material of materials) {
-      material.dispose();
-    }
-  });
-}
+type ModelViewerElement = HTMLElement;
 
 export function Product3DViewer({
   modelUrl,
-  fallbackImageUrl,
   productName,
   productId,
 }: Product3DViewerProps) {
-  const mountRef = useRef<HTMLDivElement>(null);
+  const modelViewerRef = useRef<ModelViewerElement | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const trackedRef = useRef(false);
-  const [loadError, setLoadError] = useState(false);
+  const [modelViewerReady, setModelViewerReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const safeModelUrl = isValidGlbUrl(modelUrl) ? modelUrl.trim() : null;
 
   useEffect(() => {
-    if (!modelUrl || trackedRef.current) return;
-    trackedRef.current = true;
-    track({ event_name: EVENTS.VIEW_3D_OPEN, product_id: productId });
-  }, [modelUrl, productId]);
+    let mounted = true;
 
-  useEffect(() => {
-    if (!modelUrl || !mountRef.current) return;
-
-    let frameId = 0;
-    let model: THREE.Object3D | null = null;
-    let disposed = false;
-
-    setLoadError(false);
-    setLoaded(false);
-
-    const mount = mountRef.current;
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-    camera.position.set(0, 0.3, 4.4);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.setClearColor(0x000000, 0);
-    mount.appendChild(renderer.domElement);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.enablePan = false;
-    controls.enableZoom = true;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.1;
-    controls.minDistance = 1.5;
-    controls.maxDistance = 8;
-
-    scene.add(new THREE.AmbientLight(0xf5f0e8, 0.8));
-
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
-    keyLight.position.set(3.5, 4.5, 4);
-    keyLight.castShadow = true;
-    scene.add(keyLight);
-
-    const rimLight = new THREE.DirectionalLight(0xd4c4a8, 1.2);
-    rimLight.position.set(-4, 2, -3);
-    scene.add(rimLight);
-
-    const fillLight = new THREE.PointLight(0xc9a962, 1.8, 8);
-    fillLight.position.set(0, 2.5, 2);
-    scene.add(fillLight);
-
-    const resize = () => {
-      const width = mount.clientWidth;
-      const height = mount.clientHeight;
-      renderer.setSize(width, height, false);
-      camera.aspect = width / Math.max(height, 1);
-      camera.updateProjectionMatrix();
-    };
-
-    const resizeObserver = new ResizeObserver(resize);
-    resizeObserver.observe(mount);
-    resize();
-
-    const loader = new GLTFLoader();
-    loader.load(
-      modelUrl,
-      (gltf) => {
-        if (disposed) return;
-
-        model = gltf.scene;
-        model.traverse((child) => {
-          if (!(child as THREE.Mesh).isMesh) return;
-          const mesh = child as THREE.Mesh;
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-        });
-
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        const maxSize = Math.max(size.x, size.y, size.z) || 1;
-        const scale = 2.45 / maxSize;
-
-        model.position.sub(center);
-        model.scale.setScalar(scale);
-        scene.add(model);
-        setLoaded(true);
-      },
-      undefined,
-      (error) => {
-        console.error("[Product3DViewer] Failed to load model", { modelUrl, error });
-        if (!disposed) setLoadError(true);
-      }
-    );
-
-    const animate = () => {
-      frameId = window.requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    };
-
-    animate();
+    import("@google/model-viewer")
+      .then(() => {
+        if (mounted) setModelViewerReady(true);
+      })
+      .catch((err) => {
+        console.error("[Product3DViewer] Failed to load model-viewer", err);
+        if (mounted) setLoadError("3D viewer failed to load.");
+      });
 
     return () => {
-      disposed = true;
-      window.cancelAnimationFrame(frameId);
-      resizeObserver.disconnect();
-      controls.dispose();
-      if (model) disposeObject(model);
-      renderer.dispose();
-      renderer.domElement.remove();
+      mounted = false;
     };
-  }, [modelUrl]);
+  }, []);
 
-  if (!modelUrl || loadError) {
-    return (
-      <FallbackImage
-        fallbackImageUrl={fallbackImageUrl}
-        productName={productName}
-      />
-    );
+  useEffect(() => {
+    setLoaded(false);
+    setLoadError(null);
+    setProgress(0);
+  }, [safeModelUrl]);
+
+  useEffect(() => {
+    if (!safeModelUrl || trackedRef.current) return;
+    trackedRef.current = true;
+    track({ event_name: EVENTS.VIEW_3D_OPEN, product_id: productId });
+  }, [safeModelUrl, productId]);
+
+  useEffect(() => {
+    const modelViewer = modelViewerRef.current;
+    if (!modelViewer || !safeModelUrl) return;
+
+    const attributes: Record<string, string> = {
+      src: safeModelUrl,
+      alt: `${productName} 3D model`,
+      "auto-rotate-delay": "1200",
+      "rotation-per-second": "24deg",
+      "touch-action": "pan-y",
+      "interaction-prompt": "auto",
+      "shadow-intensity": "0.85",
+      "shadow-softness": "0.8",
+      exposure: "1.05",
+      "environment-image": "neutral",
+      "camera-orbit": "0deg 72deg 105%",
+      "min-camera-orbit": "auto auto 55%",
+      "max-camera-orbit": "auto auto 220%",
+      "field-of-view": "30deg",
+      loading: "eager",
+      reveal: "auto",
+    };
+
+    modelViewer.setAttribute("camera-controls", "");
+    modelViewer.setAttribute("auto-rotate", "");
+    for (const [key, value] of Object.entries(attributes)) {
+      modelViewer.setAttribute(key, value);
+    }
+
+    const handleLoad = () => {
+      setLoaded(true);
+      setProgress(1);
+    };
+    const handleError = (event: Event) => {
+      console.error("[Product3DViewer] Failed to load model", { modelUrl: safeModelUrl, event });
+      setLoadError("3D model unavailable.");
+    };
+    const handleProgress = (event: Event) => {
+      const totalProgress = (event as CustomEvent<{ totalProgress?: number }>).detail?.totalProgress;
+      if (typeof totalProgress === "number") setProgress(totalProgress);
+    };
+
+    modelViewer.addEventListener("load", handleLoad);
+    modelViewer.addEventListener("error", handleError);
+    modelViewer.addEventListener("progress", handleProgress);
+
+    return () => {
+      modelViewer.removeEventListener("load", handleLoad);
+      modelViewer.removeEventListener("error", handleError);
+      modelViewer.removeEventListener("progress", handleProgress);
+    };
+  }, [safeModelUrl, modelViewerReady, productName]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === frameRef.current);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  async function toggleFullscreen() {
+    const frame = frameRef.current;
+    if (!frame) return;
+
+    try {
+      if (document.fullscreenElement === frame) {
+        await document.exitFullscreen();
+      } else {
+        await frame.requestFullscreen();
+      }
+    } catch (err) {
+      console.error("[Product3DViewer] Fullscreen failed", err);
+    }
   }
 
+  if (!safeModelUrl) return null;
+
+  const loadingLabel = progress > 0 ? `${Math.round(progress * 100)}%` : "Loading";
+
   return (
-    <div className="relative aspect-square w-full max-w-md overflow-hidden border border-ivory/10 bg-gradient-to-b from-ink-muted to-ink-deep">
-      <div ref={mountRef} className="absolute inset-0" data-product-3d-viewer />
-      {!loaded && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+    <div
+      ref={frameRef}
+      className="relative aspect-square w-full max-w-md overflow-hidden border border-ivory/10 bg-gradient-to-b from-ink-muted to-ink-deep"
+      data-product-3d-frame
+    >
+      {modelViewerReady &&
+        createElement("model-viewer", {
+          ref: modelViewerRef,
+          className: "h-full w-full",
+          style: {
+            background: "transparent",
+            height: "100%",
+            width: "100%",
+          },
+          "data-product-3d-viewer": true,
+        })}
+
+      {(!modelViewerReady || (!loaded && !loadError)) && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-ink-deep/40">
           <div className="h-10 w-10 animate-spin rounded-full border border-gold/20 border-t-gold/80" />
+          <p className="text-[9px] uppercase tracking-[0.35em] text-ivory/40">{loadingLabel}</p>
         </div>
       )}
+
+      {loadError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-ink-deep/85 px-8 text-center">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-ivory/45">{loadError}</p>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={toggleFullscreen}
+        className="absolute right-3 top-3 z-10 border border-ivory/15 bg-ink-deep/70 px-3 py-2 text-[9px] uppercase tracking-[0.25em] text-ivory/60 backdrop-blur transition-colors hover:border-gold/40 hover:text-gold"
+        aria-label={isFullscreen ? "Exit fullscreen 3D viewer" : "Open fullscreen 3D viewer"}
+      >
+        {isFullscreen ? "Exit" : "Full"}
+      </button>
+
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_56%,rgba(5,5,5,0.62)_100%)]" />
       <p className="pointer-events-none absolute bottom-4 left-0 right-0 text-center text-[9px] uppercase tracking-[0.35em] text-ivory/30">
-        360 view · drag to rotate · pinch to zoom
+        360 view
       </p>
     </div>
   );
