@@ -69,23 +69,6 @@ export function AdvisorSplit() {
             />
             {/* Overlay gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-ink-deep/80 via-transparent to-transparent" />
-            <div className="absolute left-6 right-6 top-6 border border-ivory/20 bg-ivory/95 backdrop-blur-sm p-5 sm:left-8 sm:right-8">
-              <div className="flex items-center gap-3">
-                <div className="relative h-14 w-14 shrink-0 overflow-hidden border border-pearl-gray">
-                  <Image
-                    src="/products/09e1834a829c81bbfcc8f6a904242cad.jpg"
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="56px"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.35em] text-gold-muted">{a.livePreview}</p>
-                  <p className="truncate font-serif text-base text-ink">{a.title}</p>
-                </div>
-              </div>
-            </div>
             <div className="relative p-6 sm:p-8">
               <p className="text-[10px] uppercase tracking-[0.4em] text-gold-champagne">{a.arExperience}</p>
               <p className="mt-3 font-serif text-[1.75rem] leading-[1.2] text-ivory">{a.seeOnYou}</p>
