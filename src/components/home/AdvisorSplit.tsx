@@ -60,7 +60,7 @@ export function AdvisorSplit() {
           {/* Virtual try-on preview card */}
           <div className="relative flex min-h-[400px] flex-col justify-end overflow-hidden bg-ink-deep lg:min-h-[440px]">
             <Image
-              src="/ai-stylist-gemini-dark.jpg"
+              src="/webwxgetmsgimg.jpeg"
               alt="AI Luxury Styling Session"
               fill
               className="object-cover object-top"
