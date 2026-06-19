@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/context";
+import { track } from "@/lib/analytics/tracker";
+import { EVENTS } from "@/lib/analytics/events";
 
 /**
  * MVP: client-only acknowledgment.
@@ -15,6 +17,7 @@ export function NewsletterForm() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    track({ event_name: EVENTS.NEWSLETTER_SUBSCRIBE });
     setSent(true);
   }
 

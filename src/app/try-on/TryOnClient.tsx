@@ -361,6 +361,7 @@ export function TryOnClient() {
   function download() {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    track({ event_name: EVENTS.TRYON_COMPLETE, tool_name: "virtual-try-on" });
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
     a.download = `stylix-tryon-${NECKLACE.id}.png`;

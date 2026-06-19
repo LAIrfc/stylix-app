@@ -9,6 +9,8 @@ export interface AnalyticsEvent {
   anonymous_user_id?: string;
   session_id?: string;
   device_type?: string;
+  browser?: string;
+  traffic_source?: string;
   referrer?: string;
   country?: string;
 }
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
       anonymous_user_id: ev.anonymous_user_id ?? null,
       session_id: ev.session_id ?? null,
       device_type: ev.device_type ?? null,
+      browser: ev.browser ?? null,
+      traffic_source: ev.traffic_source ?? null,
       referrer: ev.referrer ?? null,
       country: ev.country ?? null,
       timestamp: now,

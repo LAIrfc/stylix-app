@@ -5,6 +5,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/context";
 import { uploadImage } from "@/lib/utils/upload";
+import { track } from "@/lib/analytics/tracker";
+import { EVENTS } from "@/lib/analytics/events";
 
 export function VipClient() {
   const { t } = useI18n();
@@ -16,6 +18,7 @@ export function VipClient() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    track({ event_name: EVENTS.VIP_REQUEST });
     setDone(true);
   }
 

@@ -150,7 +150,9 @@ export function AdvisorClient() {
       jewelryCategory: jewelryCategory === "all" ? undefined : jewelryCategory,
     };
     track({ event_name: EVENTS.ADVISOR_SUBMIT, tool_name: "ai-advisor" });
-    setResult(runAdvisor(input));
+    const r = runAdvisor(input);
+    setResult(r);
+    if (r) track({ event_name: EVENTS.ADVISOR_RESULT_VIEW, tool_name: "ai-advisor" });
   }
 
   const mainPick = result?.recommendations[0] ?? null;

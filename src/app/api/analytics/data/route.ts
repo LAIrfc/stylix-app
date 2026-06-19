@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 const PAGE_SIZE = 1000;
 const ANALYTICS_SELECT =
-  "id, event_name, page_url, product_id, tool_name, timestamp, anonymous_user_id, session_id, device_type, referrer, country";
+  "id, event_name, page_url, product_id, tool_name, timestamp, anonymous_user_id, session_id, device_type, browser, traffic_source, referrer, country";
 
 type AnalyticsRange = "today" | "7d" | "30d" | "90d" | "6m" | "12m" | "all";
 
@@ -18,6 +18,8 @@ interface AnalyticsEventRow {
   anonymous_user_id: string | null;
   session_id: string | null;
   device_type: string | null;
+  browser: string | null;
+  traffic_source: string | null;
   referrer: string | null;
   country: string | null;
 }
@@ -184,6 +186,30 @@ export async function GET(req: NextRequest) {
     increment(funnelCounts, row.event_name);
   }
 
+  // Aggregate traffic sources
+  const sourceCounts: Record<string, number> = {};
+  for (const row of rows) {
+    increment(sourceCounts, row.traffic_source ?? "direct");
+  }
+  const trafficSources = sortCounts(sourceCounts, 10)
+    .map(([source, count]) => ({ source, count }));
+
+  // Aggregate browsers
+  const browserCounts: Record<string, number> = {};
+  for (const row of rows) {
+    increment(browserCounts, row.browser ?? "other");
+  }
+  const browsers = sortCounts(browserCounts, 10)
+    .map(([browser, count]) => ({ browser, count }));
+
+  // Aggregate devices
+  const deviceCounts: Record<string, number> = {};
+  for (const row of rows) {
+    increment(deviceCounts, row.device_type ?? "unknown");
+  }
+  const devices = sortCounts(deviceCounts, 5)
+    .map(([device, count]) => ({ device, count }));
+
   const uniqueVisitors = new Set(rows.map((row) => row.anonymous_user_id).filter(Boolean)).size;
   const uniqueSessions = new Set(rows.map((row) => row.session_id).filter(Boolean)).size;
 
@@ -207,6 +233,9 @@ export async function GET(req: NextRequest) {
     topPages,
     totalPageViews,
     topProducts,
+    trafficSources,
+    browsers,
+    devices,
     toolUsage: {
       viewer3dOpen: toolCounts[EVENTS.VIEWER_3D_OPEN] ?? 0,
       viewer3dInteract: toolCounts[EVENTS.VIEWER_3D_INTERACT] ?? 0,

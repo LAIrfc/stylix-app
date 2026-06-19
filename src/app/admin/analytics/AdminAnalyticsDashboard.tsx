@@ -21,6 +21,9 @@ interface AnalyticsData {
   };
   topPages?: { url: string; count: number }[];
   topProducts?: { productId: string; count: number }[];
+  trafficSources?: { source: string; count: number }[];
+  browsers?: { browser: string; count: number }[];
+  devices?: { device: string; count: number }[];
   toolUsage?: {
     viewer3dOpen: number;
     viewer3dInteract: number;
@@ -47,6 +50,8 @@ interface AnalyticsData {
     anonymous_user_id: string | null;
     session_id: string | null;
     device_type: string | null;
+    browser: string | null;
+    traffic_source: string | null;
     referrer: string | null;
     country: string | null;
   }[];
@@ -404,7 +409,7 @@ export function AdminAnalyticsDashboard() {
     );
   }
 
-  const { summary, topPages, topProducts, toolUsage, funnel, journey } = data;
+  const { summary, topPages, topProducts, trafficSources, browsers, devices, toolUsage, funnel, journey } = data;
   const journeySlice = (journey ?? []).slice(
     journeyPage * JOURNEY_PAGE_SIZE,
     (journeyPage + 1) * JOURNEY_PAGE_SIZE
@@ -711,6 +716,42 @@ export function AdminAnalyticsDashboard() {
           </section>
         </div>
 
+        {/* ── Traffic Sources + Browser + Device ───────────────────────── */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <section>
+            <SectionTitle>Traffic Sources</SectionTitle>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-5 py-4">
+              {(trafficSources ?? []).length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">No traffic data yet.</p>
+              ) : (trafficSources ?? []).map((s, i) => (
+                <BarRow key={i} rank={i + 1} label={s.source} count={s.count} max={trafficSources?.[0]?.count ?? 1} color="bg-emerald-400" />
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <SectionTitle>Browsers</SectionTitle>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-5 py-4">
+              {(browsers ?? []).length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">No browser data yet.</p>
+              ) : (browsers ?? []).map((b, i) => (
+                <BarRow key={i} rank={i + 1} label={b.browser} count={b.count} max={browsers?.[0]?.count ?? 1} color="bg-sky-400" />
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <SectionTitle>Devices</SectionTitle>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-5 py-4">
+              {(devices ?? []).length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">No device data yet.</p>
+              ) : (devices ?? []).map((d, i) => (
+                <BarRow key={i} rank={i + 1} label={d.device} count={d.count} max={devices?.[0]?.count ?? 1} color="bg-orange-400" />
+              ))}
+            </div>
+          </section>
+        </div>
+
         {/* ── User Journey Log ─────────────────────────────────────────── */}
         <section>
           <SectionTitle>User Journey Log</SectionTitle>
@@ -718,7 +759,7 @@ export function AdminAnalyticsDashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  {["Time", "Event", "Page", "Product", "Tool", "Session", "Device", "Country"].map((h) => (
+                  {["Time", "Event", "Page", "Product", "Tool", "Session", "Device", "Browser", "Source", "Country"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap">
                       {h}
                     </th>
@@ -728,7 +769,7 @@ export function AdminAnalyticsDashboard() {
               <tbody>
                 {journeySlice.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-gray-400 text-sm">
+                    <td colSpan={10} className="px-4 py-10 text-center text-gray-400 text-sm">
                       No events in this time range.
                     </td>
                   </tr>
@@ -748,6 +789,8 @@ export function AdminAnalyticsDashboard() {
                         {ev.session_id ? ev.session_id.slice(0, 8) + "…" : "—"}
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs capitalize">{ev.device_type ?? "—"}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs capitalize">{ev.browser ?? "—"}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{ev.traffic_source ?? "—"}</td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{ev.country ?? "—"}</td>
                     </tr>
                   ))
