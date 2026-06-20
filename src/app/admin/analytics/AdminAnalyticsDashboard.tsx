@@ -24,6 +24,8 @@ interface AnalyticsData {
   trafficSources?: { source: string; count: number }[];
   browsers?: { browser: string; count: number }[];
   devices?: { device: string; count: number }[];
+  countries?: { country: string; count: number }[];
+  regions?: { region: string; count: number }[];
   toolUsage?: {
     viewer3dOpen: number;
     viewer3dInteract: number;
@@ -54,6 +56,7 @@ interface AnalyticsData {
     traffic_source: string | null;
     referrer: string | null;
     country: string | null;
+    region: string | null;
   }[];
 }
 
@@ -409,7 +412,7 @@ export function AdminAnalyticsDashboard() {
     );
   }
 
-  const { summary, topPages, topProducts, trafficSources, browsers, devices, toolUsage, funnel, journey } = data;
+  const { summary, topPages, topProducts, trafficSources, browsers, devices, countries, regions, toolUsage, funnel, journey } = data;
   const journeySlice = (journey ?? []).slice(
     journeyPage * JOURNEY_PAGE_SIZE,
     (journeyPage + 1) * JOURNEY_PAGE_SIZE
@@ -752,6 +755,31 @@ export function AdminAnalyticsDashboard() {
           </section>
         </div>
 
+        {/* ── Countries + Regions ──────────────────────────────────────── */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <section>
+            <SectionTitle>Top Countries</SectionTitle>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-5 py-4">
+              {(countries ?? []).length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">Country data available after deployment to Vercel.</p>
+              ) : (countries ?? []).map((c, i) => (
+                <BarRow key={i} rank={i + 1} label={c.country} count={c.count} max={countries?.[0]?.count ?? 1} color="bg-teal-400" />
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <SectionTitle>Top Regions</SectionTitle>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-5 py-4">
+              {(regions ?? []).length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">Region data available after deployment to Vercel.</p>
+              ) : (regions ?? []).map((r, i) => (
+                <BarRow key={i} rank={i + 1} label={r.region} count={r.count} max={regions?.[0]?.count ?? 1} color="bg-cyan-400" />
+              ))}
+            </div>
+          </section>
+        </div>
+
         {/* ── User Journey Log ─────────────────────────────────────────── */}
         <section>
           <SectionTitle>User Journey Log</SectionTitle>
@@ -759,7 +787,7 @@ export function AdminAnalyticsDashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  {["Time", "Event", "Page", "Product", "Tool", "Session", "Device", "Browser", "Source", "Country"].map((h) => (
+                  {["Time", "Event", "Page", "Product", "Tool", "Session", "Device", "Browser", "Source", "Country", "Region"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap">
                       {h}
                     </th>
@@ -769,7 +797,7 @@ export function AdminAnalyticsDashboard() {
               <tbody>
                 {journeySlice.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-10 text-center text-gray-400 text-sm">
+                    <td colSpan={11} className="px-4 py-10 text-center text-gray-400 text-sm">
                       No events in this time range.
                     </td>
                   </tr>
@@ -792,6 +820,7 @@ export function AdminAnalyticsDashboard() {
                       <td className="px-4 py-3 text-gray-500 text-xs capitalize">{ev.browser ?? "—"}</td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{ev.traffic_source ?? "—"}</td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{ev.country ?? "—"}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{ev.region ?? "—"}</td>
                     </tr>
                   ))
                 )}

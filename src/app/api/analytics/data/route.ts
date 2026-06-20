@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 const PAGE_SIZE = 1000;
 const ANALYTICS_SELECT =
-  "id, event_name, page_url, product_id, tool_name, timestamp, anonymous_user_id, session_id, device_type, browser, traffic_source, referrer, country";
+  "id, event_name, page_url, product_id, tool_name, timestamp, anonymous_user_id, session_id, device_type, browser, traffic_source, referrer, country, region";
 
 type AnalyticsRange = "today" | "7d" | "30d" | "90d" | "6m" | "12m" | "all";
 
@@ -22,6 +22,7 @@ interface AnalyticsEventRow {
   traffic_source: string | null;
   referrer: string | null;
   country: string | null;
+  region: string | null;
 }
 
 function unauthorized() {
@@ -204,6 +205,22 @@ export async function GET(req: NextRequest) {
   const devices = sortCounts(deviceCounts, 5)
     .map(([device, count]) => ({ device, count }));
 
+  // Aggregate countries
+  const countryCounts: Record<string, number> = {};
+  for (const row of rows) {
+    if (row.country) increment(countryCounts, row.country);
+  }
+  const countries = sortCounts(countryCounts, 15)
+    .map(([country, count]) => ({ country, count }));
+
+  // Aggregate regions (top 10)
+  const regionCounts: Record<string, number> = {};
+  for (const row of rows) {
+    if (row.region) increment(regionCounts, row.region);
+  }
+  const regions = sortCounts(regionCounts, 10)
+    .map(([region, count]) => ({ region, count }));
+
   const uniqueVisitors = new Set(rows.map((row) => row.anonymous_user_id).filter(Boolean)).size;
   const uniqueSessions = new Set(rows.map((row) => row.session_id).filter(Boolean)).size;
 
@@ -231,6 +248,8 @@ export async function GET(req: NextRequest) {
     trafficSources,
     browsers,
     devices,
+    countries,
+    regions,
     toolUsage: {
       viewer3dOpen: (eventCounts[EVENTS.VIEWER_3D_OPEN] ?? 0) + (eventCounts[EVENTS.VIEW_3D_OPEN] ?? 0),
       viewer3dInteract: eventCounts[EVENTS.VIEWER_3D_INTERACT] ?? 0,

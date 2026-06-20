@@ -4,6 +4,13 @@
 const ANON_ID_KEY = "stylix_anon_id";
 const SESSION_ID_KEY = "stylix_session_id";
 
+// Production hostname — events from any other host are dropped silently.
+// Set NEXT_PUBLIC_SITE_URL in .env to control this.
+const PRODUCTION_HOST =
+  (typeof process !== "undefined" &&
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/https?:\/\//, "").replace(/\/$/, "")) ||
+  "stylix.app";
+
 // Commerce events that must flush immediately, not wait for the 2s batch timer.
 const IMMEDIATE_EVENTS = new Set([
   "product_view",
@@ -13,6 +20,16 @@ const IMMEDIATE_EVENTS = new Set([
   "checkout_submit",
   "purchase",
 ]);
+
+function isProductionHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  // Always block localhost and loopback
+  if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") return false;
+  // Block Vercel preview deployments (*.vercel.app) that are not the canonical domain
+  if (host.endsWith(".vercel.app") && host !== PRODUCTION_HOST) return false;
+  return true;
+}
 
 function uuid(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -54,6 +71,7 @@ function getBrowser(): string {
   const ua = navigator.userAgent;
   if (/edg\//i.test(ua)) return "edge";
   if (/opr\/|opera/i.test(ua)) return "opera";
+  // Chrome must come before Safari — Chrome UA contains both "Chrome" and "Safari"
   if (/chrome|chromium|crios/i.test(ua)) return "chrome";
   if (/firefox|fxios/i.test(ua)) return "firefox";
   if (/safari/i.test(ua)) return "safari";
@@ -62,7 +80,8 @@ function getBrowser(): string {
 
 function getTrafficSource(): string {
   if (typeof window === "undefined") return "direct";
-  // Check UTM source param first
+
+  // UTM source takes priority
   const params = new URLSearchParams(window.location.search);
   const utmSource = params.get("utm_source")?.toLowerCase() ?? "";
   if (utmSource) {
@@ -71,16 +90,29 @@ function getTrafficSource(): string {
     if (utmSource.includes("pinterest")) return "pinterest";
     if (utmSource.includes("google")) return "google";
     if (utmSource.includes("facebook") || utmSource.includes("fb")) return "facebook";
+    if (utmSource.includes("twitter") || utmSource.includes("x.com")) return "twitter";
+    if (utmSource.includes("wechat") || utmSource.includes("weixin")) return "wechat";
     return "referral";
   }
-  // Fall back to referrer
+
   const ref = document.referrer?.toLowerCase() ?? "";
   if (!ref) return "direct";
-  if (ref.includes("instagram.com")) return "instagram";
-  if (ref.includes("tiktok.com")) return "tiktok";
-  if (ref.includes("pinterest.com")) return "pinterest";
-  if (ref.includes("google.com") || ref.includes("google.co")) return "google";
-  if (ref.includes("facebook.com") || ref.includes("fb.com")) return "facebook";
+
+  // Strip the referrer to hostname only for matching
+  let refHost = ref;
+  try { refHost = new URL(ref).hostname; } catch { /* keep as-is */ }
+
+  if (refHost.includes("instagram.com")) return "instagram";
+  if (refHost.includes("tiktok.com")) return "tiktok";
+  if (refHost.includes("pinterest.com")) return "pinterest";
+  if (refHost.includes("google.com") || refHost.includes("google.co")) return "google";
+  if (refHost.includes("facebook.com") || refHost.includes("fb.com") || refHost === "m.facebook.com") return "facebook";
+  if (refHost === "t.co" || refHost.includes("twitter.com") || refHost.includes("x.com")) return "twitter";
+  if (refHost.includes("weixin") || refHost.includes("wechat")) return "wechat";
+
+  // Treat internal navigation (same site) as direct
+  if (refHost === window.location.hostname) return "direct";
+
   return "referral";
 }
 
@@ -88,8 +120,6 @@ export interface TrackEventOptions {
   event_name: string;
   product_id?: string;
   tool_name?: string;
-  browser?: string;
-  traffic_source?: string;
 }
 
 // Queue for batching non-critical events — flush every 2s or when queue reaches 10.
@@ -114,12 +144,10 @@ async function flush() {
     });
     if (!res.ok) {
       console.error("[analytics] flush failed:", res.status, await res.text().catch(() => ""));
-      // Re-queue so events aren't silently lost
       queue.unshift(...batch);
     }
   } catch (err) {
     console.error("[analytics] flush error:", err);
-    // Re-queue so events aren't silently lost
     queue.unshift(...batch);
   }
 }
@@ -142,6 +170,8 @@ async function flushImmediate(events: object[]) {
 
 export function track(opts: TrackEventOptions) {
   if (typeof window === "undefined") return;
+  // Drop events from localhost and non-production Vercel preview URLs
+  if (!isProductionHost()) return;
 
   const event = {
     event_name: opts.event_name,
@@ -154,11 +184,12 @@ export function track(opts: TrackEventOptions) {
     browser: getBrowser(),
     traffic_source: getTrafficSource(),
     referrer: document.referrer || null,
+    // country + region resolved server-side from Vercel geo headers
     country: null,
+    region: null,
   };
 
   if (IMMEDIATE_EVENTS.has(opts.event_name)) {
-    // Fire immediately — don't batch commerce events
     flushImmediate([event]);
     return;
   }
