@@ -174,16 +174,10 @@ export async function GET(req: NextRequest) {
   const topProducts = sortCounts(productCounts, 10)
     .map(([productId, count]) => ({ productId, count }));
 
-  // Aggregate tool usage
-  const toolCounts: Record<string, number> = {};
+  // Single pass: count all event names (used for both tool usage and funnel)
+  const eventCounts: Record<string, number> = {};
   for (const row of rows) {
-    increment(toolCounts, row.event_name);
-  }
-
-  // Aggregate funnel
-  const funnelCounts: Record<string, number> = {};
-  for (const row of rows) {
-    increment(funnelCounts, row.event_name);
+    increment(eventCounts, row.event_name);
   }
 
   // Aggregate traffic sources
@@ -224,6 +218,7 @@ export async function GET(req: NextRequest) {
       productViews: countEvents(rows, EVENTS.PRODUCT_VIEW),
       toolUses:
         countEvents(rows, EVENTS.VIEWER_3D_OPEN) +
+        countEvents(rows, EVENTS.VIEW_3D_OPEN) +
         countEvents(rows, EVENTS.TRYON_START) +
         countEvents(rows, EVENTS.ADVISOR_SUBMIT),
       addToCart: countEvents(rows, EVENTS.ADD_TO_CART),
@@ -237,21 +232,21 @@ export async function GET(req: NextRequest) {
     browsers,
     devices,
     toolUsage: {
-      viewer3dOpen: toolCounts[EVENTS.VIEWER_3D_OPEN] ?? 0,
-      viewer3dInteract: toolCounts[EVENTS.VIEWER_3D_INTERACT] ?? 0,
-      tryonStart: toolCounts[EVENTS.TRYON_START] ?? 0,
-      tryonComplete: toolCounts[EVENTS.TRYON_COMPLETE] ?? 0,
-      advisorSubmit: toolCounts[EVENTS.ADVISOR_SUBMIT] ?? 0,
-      advisorResultView: toolCounts[EVENTS.ADVISOR_RESULT_VIEW] ?? 0,
+      viewer3dOpen: (eventCounts[EVENTS.VIEWER_3D_OPEN] ?? 0) + (eventCounts[EVENTS.VIEW_3D_OPEN] ?? 0),
+      viewer3dInteract: eventCounts[EVENTS.VIEWER_3D_INTERACT] ?? 0,
+      tryonStart: eventCounts[EVENTS.TRYON_START] ?? 0,
+      tryonComplete: eventCounts[EVENTS.TRYON_COMPLETE] ?? 0,
+      advisorSubmit: eventCounts[EVENTS.ADVISOR_SUBMIT] ?? 0,
+      advisorResultView: eventCounts[EVENTS.ADVISOR_RESULT_VIEW] ?? 0,
     },
     funnel: {
-      pageView: funnelCounts[EVENTS.PAGE_VIEW] ?? 0,
-      productView: funnelCounts[EVENTS.PRODUCT_VIEW] ?? 0,
-      addToCart: funnelCounts[EVENTS.ADD_TO_CART] ?? 0,
-      cartView: funnelCounts[EVENTS.CART_VIEW] ?? 0,
-      checkoutStart: funnelCounts[EVENTS.CHECKOUT_START] ?? 0,
-      checkoutSubmit: funnelCounts[EVENTS.CHECKOUT_SUBMIT] ?? 0,
-      purchase: funnelCounts[EVENTS.PURCHASE] ?? 0,
+      pageView: eventCounts[EVENTS.PAGE_VIEW] ?? 0,
+      productView: eventCounts[EVENTS.PRODUCT_VIEW] ?? 0,
+      addToCart: eventCounts[EVENTS.ADD_TO_CART] ?? 0,
+      cartView: eventCounts[EVENTS.CART_VIEW] ?? 0,
+      checkoutStart: eventCounts[EVENTS.CHECKOUT_START] ?? 0,
+      checkoutSubmit: eventCounts[EVENTS.CHECKOUT_SUBMIT] ?? 0,
+      purchase: eventCounts[EVENTS.PURCHASE] ?? 0,
     },
     journey: rows.slice(0, 200),
   });
