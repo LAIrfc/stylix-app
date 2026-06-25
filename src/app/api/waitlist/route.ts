@@ -59,19 +59,26 @@ export async function POST(req: NextRequest) {
 
   try {
     const db = getSupabaseAdmin();
-    const { error } = await db
+
+    // Try full upsert first (all columns)
+    let { error } = await db
       .schema("public")
       .from("early_access_waitlist")
       .upsert(
-        {
-          email,
-          name: name || null,
-          country,
-          gender,
-          source: source || null,
-        },
+        { email, name: name || null, country, gender, source: source || null },
         { onConflict: "email" }
       );
+
+    // If schema cache says a column doesn't exist, retry with only required columns.
+    // This handles the case where the live table is missing optional columns (name, source)
+    // that were added later in schema.sql but not yet migrated in production.
+    if (error?.message?.includes("Could not find the")) {
+      console.warn("[waitlist] schema mismatch — retrying with required columns only:", error.message);
+      ({ error } = await db
+        .schema("public")
+        .from("early_access_waitlist")
+        .upsert({ email, country, gender }, { onConflict: "email" }));
+    }
 
     if (error) {
       console.error("[waitlist] insert failed", {
@@ -102,7 +109,7 @@ export async function GET(req: NextRequest) {
     const { data, error } = await db
       .schema("public")
       .from("early_access_waitlist")
-      .select("id, email, name, country, gender, source, created_at")
+      .select("id, email, country, gender, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
