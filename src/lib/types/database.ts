@@ -97,3 +97,29 @@ export interface DbEarlyAccessWaitlistUser {
   source: string | null;
   created_at: string;
 }
+
+export interface DbOrder {
+  id: string;
+  order_id: string;
+  stripe_session_id: string;
+  stripe_payment_intent: string | null;
+  status: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string | null;
+  shipping_address1: string;
+  shipping_address2: string | null;
+  shipping_city: string;
+  shipping_state: string;
+  shipping_zip: string;
+  shipping_country: string;
+  subtotal_cents: number;
+  tax_cents: number;
+  total_cents: number;
+  shipping_free: boolean;
+  currency: string;
+  items_json: Array<{ id: string; name: string; price: number; qty: number }>;
+  placed_at: string;
+  created_at: string;
+}

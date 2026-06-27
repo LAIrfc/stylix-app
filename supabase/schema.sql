@@ -152,3 +152,35 @@ create index if not exists idx_analytics_events_timestamp on public.analytics_ev
 create index if not exists idx_analytics_events_session on public.analytics_events(session_id);
 create index if not exists idx_analytics_events_anonymous_user on public.analytics_events(anonymous_user_id);
 create index if not exists idx_analytics_events_product on public.analytics_events(product_id);
+
+-- 13. orders
+create table if not exists public.orders (
+  id                    uuid primary key default gen_random_uuid(),
+  order_id              text not null,
+  stripe_session_id     text not null unique,
+  stripe_payment_intent text,
+  status                text not null default 'paid',
+  email                 text not null,
+  first_name            text not null,
+  last_name             text not null,
+  phone                 text,
+  shipping_address1     text not null,
+  shipping_address2     text,
+  shipping_city         text not null,
+  shipping_state        text not null,
+  shipping_zip          text not null,
+  shipping_country      text not null default 'US',
+  subtotal_cents        integer not null,
+  tax_cents             integer not null,
+  total_cents           integer not null,
+  shipping_free         boolean not null default false,
+  currency              text not null default 'usd',
+  items_json            jsonb not null,
+  placed_at             timestamptz not null default now(),
+  created_at            timestamptz not null default now()
+);
+
+create index if not exists idx_orders_stripe_session_id on public.orders(stripe_session_id);
+create index if not exists idx_orders_email on public.orders(email);
+
+alter table public.orders enable row level security;

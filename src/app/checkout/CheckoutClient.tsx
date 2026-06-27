@@ -2,14 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart/CartContext";
-import { useOrder, generateOrderId, type OrderSummary } from "@/lib/order/OrderContext";
 import { track } from "@/lib/analytics/tracker";
 import { EVENTS } from "@/lib/analytics/events";
-
-type PaymentMethod = "card" | "apple-pay" | "paypal";
 
 const ESTIMATED_TAX_RATE = 0.08875;
 const SHIPPING_THRESHOLD = 500;
@@ -54,7 +50,7 @@ function LoadingOverlay() {
         <p className="text-[10px] uppercase tracking-[0.55em] text-gold/70">Stylix · Secure Checkout</p>
         <span className="h-px w-8 bg-gold/40" />
       </div>
-      <p className="font-serif text-3xl text-ivory mb-6">Processing your order…</p>
+      <p className="font-serif text-3xl text-ivory mb-6">Redirecting to secure payment…</p>
       <div className="flex gap-2">
         {[0, 1, 2].map((i) => (
           <span
@@ -72,10 +68,7 @@ function LoadingOverlay() {
 }
 
 export function CheckoutClient() {
-  const { items, subtotal, clearCart } = useCart();
-  const { setOrder } = useOrder();
-  const router = useRouter();
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const { items, subtotal } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,8 +119,22 @@ export function CheckoutClient() {
             quantity: i.quantity,
             image: i.product.coverImage,
           })),
+          contact: {
+            firstName: get("firstName"),
+            lastName: get("lastName"),
+            email: get("email"),
+            phone: get("phone") || undefined,
+          },
+          shipping: {
+            address1: get("address1"),
+            address2: get("address2") || undefined,
+            city: get("city"),
+            state: get("state"),
+            zip: get("zip"),
+            country: get("country"),
+          },
           successUrl: `${origin}/checkout/success`,
-          cancelUrl: `${origin}/checkout`,
+          cancelUrl: `${origin}/checkout/cancel`,
         }),
       });
 
@@ -139,43 +146,7 @@ export function CheckoutClient() {
         return;
       }
 
-      // Build and store order summary
-      const order: OrderSummary = {
-        orderId: generateOrderId(),
-        placedAt: new Date().toISOString(),
-        items: [...items],
-        subtotal,
-        estimatedTax,
-        total: estimatedTotal,
-        shippingFree,
-        contact: {
-          firstName: get("firstName"),
-          lastName: get("lastName"),
-          email: get("email"),
-        },
-        shipping: {
-          address1: get("address1"),
-          address2: get("address2") || undefined,
-          city: get("city"),
-          state: get("state"),
-          zip: get("zip"),
-          country: get("country"),
-        },
-        paymentMethod,
-      };
-
-      setOrder(order);
-      clearCart();
-      track({ event_name: EVENTS.PURCHASE });
-
-      // Live Stripe: redirect to hosted checkout
-      if (data.url && !data.mock) {
-        window.location.href = data.url;
-        return;
-      }
-
-      // Mock: navigate to success (loading overlay stays visible during transition)
-      router.push("/checkout/success");
+      window.location.href = data.url;
     } catch {
       setError("Network error. Please check your connection and try again.");
       setSubmitting(false);
@@ -234,154 +205,48 @@ export function CheckoutClient() {
                 </div>
               </section>
 
-              {/* Payment method selector */}
+              {/* Payment note */}
               <section>
-                <p className="text-[10px] uppercase tracking-[0.4em] text-gold/70 mb-6">
-                  Payment Method
+                <p className="text-[10px] uppercase tracking-[0.4em] text-gold/70 mb-4">
+                  Payment
                 </p>
-                <div className="grid grid-cols-3 gap-3 mb-8">
-                  {(
-                    [
-                      { id: "card", label: "Credit / Debit" },
-                      { id: "apple-pay", label: "Apple Pay" },
-                      { id: "paypal", label: "PayPal" },
-                    ] as { id: PaymentMethod; label: string }[]
-                  ).map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setPaymentMethod(m.id)}
-                      className={`border py-3.5 text-[10px] uppercase tracking-[0.2em] transition-colors ${
-                        paymentMethod === m.id
-                          ? "border-gold/60 bg-gold/8 text-gold"
-                          : "border-ivory/12 text-ivory/40 hover:border-ivory/25 hover:text-ivory/60"
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
+                <div className="border border-ivory/10 bg-ink-soft/20 px-6 py-5">
+                  <p className="text-sm text-ivory/60 mb-1">
+                    You will be redirected to Stripe&apos;s secure checkout to complete payment.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {["Credit Card", "Apple Pay", "Google Pay", "Link"].map((method) => (
+                      <span
+                        key={method}
+                        className="border border-ivory/10 px-3 py-1 text-[9px] uppercase tracking-[0.2em] text-ivory/30"
+                      >
+                        {method}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-
-                {/* Card fields */}
-                {paymentMethod === "card" && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[9px] uppercase tracking-[0.3em] text-ivory/40 mb-2">
-                        Card Number
-                      </label>
-                      <div className="border border-ivory/15 px-4 py-3">
-                        <input
-                          name="cardNumber"
-                          placeholder="4242 4242 4242 4242"
-                          maxLength={19}
-                          className="w-full bg-transparent text-sm text-ivory placeholder-ivory/20 focus:outline-none"
-                          onChange={(e) => {
-                            const v = e.target.value.replace(/\D/g, "").slice(0, 16);
-                            e.target.value = v.replace(/(.{4})/g, "$1 ").trim();
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[9px] uppercase tracking-[0.3em] text-ivory/40 mb-2">
-                          Expiry
-                        </label>
-                        <div className="border border-ivory/15 px-4 py-3">
-                          <input
-                            name="expiry"
-                            placeholder="MM / YY"
-                            maxLength={7}
-                            className="w-full bg-transparent text-sm text-ivory placeholder-ivory/20 focus:outline-none"
-                            onChange={(e) => {
-                              const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                              e.target.value = v.length > 2 ? `${v.slice(0, 2)} / ${v.slice(2)}` : v;
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[9px] uppercase tracking-[0.3em] text-ivory/40 mb-2">
-                          CVC
-                        </label>
-                        <div className="border border-ivory/15 px-4 py-3">
-                          <input
-                            name="cvc"
-                            placeholder="···"
-                            maxLength={4}
-                            className="w-full bg-transparent text-sm text-ivory placeholder-ivory/20 focus:outline-none"
-                            onChange={(e) => {
-                              e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-[9px] text-ivory/20 flex items-center gap-2">
-                      <span className="h-px w-3 bg-gold/20 shrink-0" />
-                      Mock checkout — no real card data is processed or stored.
-                    </p>
-                  </div>
-                )}
-
-                {/* Apple Pay */}
-                {paymentMethod === "apple-pay" && (
-                  <div className="border border-ivory/10 bg-ink-soft/20 px-6 py-8 text-center space-y-4">
-                    <p className="font-serif text-xl text-ivory">Apple Pay</p>
-                    <p className="text-sm text-ivory/50 max-w-xs mx-auto">
-                      Apple Pay will be available once Stripe is connected and your domain is verified.
-                    </p>
-                    <p className="text-[9px] uppercase tracking-[0.3em] text-gold/40">
-                      Stripe · Apple Pay · Domain Verification Required
-                    </p>
-                    <div className="mt-4 border border-ivory/8 py-3 px-6 inline-flex items-center gap-3">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-ivory/30" aria-hidden="true">
-                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                      </svg>
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-ivory/30">Apple Pay</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* PayPal */}
-                {paymentMethod === "paypal" && (
-                  <div className="border border-ivory/10 bg-ink-soft/20 px-6 py-8 text-center space-y-4">
-                    <p className="font-serif text-xl text-ivory">PayPal</p>
-                    <p className="text-sm text-ivory/50 max-w-xs mx-auto">
-                      You will be redirected to PayPal to complete your purchase securely.
-                    </p>
-                    <p className="text-[9px] uppercase tracking-[0.3em] text-gold/40">
-                      PayPal integration — connect PayPal SDK to activate
-                    </p>
-                    <div className="mt-4 border border-ivory/8 py-3 px-8 inline-flex items-center gap-2">
-                      <span className="text-sm font-semibold italic text-[#003087]/50">Pay</span>
-                      <span className="text-sm font-semibold italic text-[#009cde]/50">Pal</span>
-                    </div>
-                  </div>
-                )}
               </section>
 
-              {/* Error */}
               {error && (
                 <p className="border border-red-400/30 bg-red-400/5 px-4 py-3 text-sm text-red-400">
                   {error}
                 </p>
               )}
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={submitting}
                 className="w-full py-4 text-[11px] uppercase tracking-[0.25em] font-medium bg-gold/90 text-ink-deep hover:bg-gold transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
-                {submitting ? "Processing…" : `Place Order · $${estimatedTotal.toFixed(2)}`}
+                {submitting ? "Redirecting…" : `Continue to Payment · $${estimatedTotal.toFixed(2)}`}
               </button>
 
               <p className="text-[9px] text-ivory/20 text-center">
-                By placing your order you agree to our{" "}
+                By continuing you agree to our{" "}
                 <Link href="#" className="underline hover:text-ivory/40">Terms of Service</Link>
                 {" "}and{" "}
                 <Link href="#" className="underline hover:text-ivory/40">Privacy Policy</Link>.
+                Payment is processed securely by Stripe.
               </p>
             </div>
 
@@ -428,7 +293,7 @@ export function CheckoutClient() {
                   <div className="flex justify-between">
                     <span className="text-ivory/50">Shipping</span>
                     <span className={shippingFree ? "text-gold/70" : "text-ivory/50"}>
-                      {shippingFree ? "Complimentary" : "Calculated"}
+                      {shippingFree ? "Complimentary" : "Calculated at checkout"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -438,7 +303,7 @@ export function CheckoutClient() {
                 </div>
 
                 <div className="mt-5 border-t border-ivory/10 pt-5 flex justify-between">
-                  <span className="font-serif text-base text-ivory">Total</span>
+                  <span className="font-serif text-base text-ivory">Estimated Total</span>
                   <span className="font-serif text-base text-ivory">${estimatedTotal.toFixed(2)}</span>
                 </div>
 
