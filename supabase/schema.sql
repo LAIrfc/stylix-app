@@ -184,3 +184,26 @@ create index if not exists idx_orders_stripe_session_id on public.orders(stripe_
 create index if not exists idx_orders_email on public.orders(email);
 
 alter table public.orders enable row level security;
+
+-- 14. atelier_leads
+create table if not exists public.atelier_leads (
+  id             uuid primary key default gen_random_uuid(),
+  email          text not null,
+  identity       text not null,
+  occasion       text not null,
+  aesthetic      text not null,
+  investment     text not null,
+  story          text,
+  archetype      text not null,
+  style_dna      text not null,
+  occasion_match text not null,
+  collection     text not null,
+  why_piece      text not null,
+  source         text default 'atelier-wizard',
+  created_at     timestamptz not null default now()
+);
+
+create index if not exists idx_atelier_leads_email on public.atelier_leads(email);
+create index if not exists idx_atelier_leads_created_at on public.atelier_leads(created_at desc);
+
+alter table public.atelier_leads enable row level security;

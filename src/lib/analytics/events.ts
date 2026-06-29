@@ -18,6 +18,8 @@ export const EVENTS = {
   PURCHASE: "purchase",
   VIP_REQUEST: "vip_request",
   NEWSLETTER_SUBSCRIBE: "newsletter_subscribe",
+  ATELIER_SUBMIT: "atelier_submit",
+  ATELIER_PROFILE_VIEW: "atelier_profile_view",
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
