@@ -26,6 +26,24 @@ export const metadata: Metadata = {
   title: "Stylix — AI-Powered Jewelry Styling",
   description:
     "Luxury jewelry styling platform: AI stylist, virtual try-on, and intelligent matching for every occasion.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://stylix.app"),
+  openGraph: {
+    title: "Stylix — AI-Powered Jewelry Styling",
+    description:
+      "Luxury jewelry styling platform: AI stylist, virtual try-on, and intelligent matching for every occasion.",
+    siteName: "Stylix",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Stylix — AI-Powered Jewelry Styling",
+    description:
+      "Luxury jewelry styling platform: AI stylist, virtual try-on, and intelligent matching for every occasion.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

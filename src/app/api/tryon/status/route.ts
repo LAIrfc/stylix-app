@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  return NextResponse.json({ hasOpenAIKey: !!process.env.OPENAI_API_KEY });
+  return NextResponse.json({ enabled: !!process.env.OPENAI_API_KEY });
 }

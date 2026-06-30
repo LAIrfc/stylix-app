@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -67,8 +68,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
   }, []);
 
+  const value = useMemo(
+    () => ({ order, setOrder, clearOrder }),
+    [order, setOrder, clearOrder]
+  );
+
   return (
-    <OrderContext.Provider value={{ order, setOrder, clearOrder }}>
+    <OrderContext.Provider value={value}>
       {children}
     </OrderContext.Provider>
   );

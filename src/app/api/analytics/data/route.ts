@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { EVENTS } from "@/lib/analytics/events";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
@@ -135,11 +136,19 @@ async function fetchAnalyticsEvents(
 }
 
 export async function GET(req: NextRequest) {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    return NextResponse.json({ error: "Service unavailable." }, { status: 503 });
+  }
+
   const auth = req.headers.get("authorization") ?? "";
   const token = auth.replace("Bearer ", "").trim();
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "stylix-admin-2024";
 
-  if (token !== adminPassword) return unauthorized();
+  const tokenBuf = Buffer.from(token);
+  const passwordBuf = Buffer.from(adminPassword);
+  if (tokenBuf.length !== passwordBuf.length || !timingSafeEqual(tokenBuf, passwordBuf)) {
+    return unauthorized();
+  }
 
   const { searchParams } = new URL(req.url);
   const range = getRange(searchParams.get("range"));

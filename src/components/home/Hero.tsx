@@ -105,7 +105,9 @@ export function Hero() {
         {/* Video background */}
         <video
           ref={videoRef}
-          src="/hero-video.mp4.mp4"
+          src="/hero-video.mp4"
+          poster="/placeholders/luxury-hero.svg"
+          preload="metadata"
           autoPlay
           muted
           loop

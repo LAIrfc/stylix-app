@@ -4,6 +4,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   useCallback,
 } from "react";
@@ -52,10 +53,15 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     applyLocaleToDocument(next);
   }, []);
 
-  const t = getTranslations(locale);
+  const t = useMemo(() => getTranslations(locale), [locale]);
+
+  const value = useMemo(
+    () => ({ locale, t, setLocale }),
+    [locale, t, setLocale]
+  );
 
   return (
-    <I18nContext.Provider value={{ locale, t, setLocale }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );

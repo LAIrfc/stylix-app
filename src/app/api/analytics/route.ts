@@ -45,6 +45,10 @@ function classifyReferrer(ref: string | null | undefined): string | null {
   return "referral";
 }
 
+const MAX_BATCH_SIZE = 25;
+const MAX_EVENT_NAME_LENGTH = 64;
+const EVENT_NAME_PATTERN = /^[a-z][a-z0-9_]{1,63}$/;
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -54,9 +58,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    if (rawEvents.length > MAX_BATCH_SIZE) {
+      return NextResponse.json(
+        { error: `Batch size exceeds maximum of ${MAX_BATCH_SIZE}.` },
+        { status: 400 }
+      );
+    }
+
     for (const ev of rawEvents) {
       if (!ev.event_name || typeof ev.event_name !== "string") {
         return NextResponse.json({ error: "event_name required" }, { status: 400 });
+      }
+      if (ev.event_name.length > MAX_EVENT_NAME_LENGTH || !EVENT_NAME_PATTERN.test(ev.event_name)) {
+        return NextResponse.json(
+          { error: `Invalid event_name: "${ev.event_name.slice(0, 30)}"` },
+          { status: 400 }
+        );
       }
     }
 

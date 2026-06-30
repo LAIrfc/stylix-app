@@ -107,17 +107,13 @@ export function CheckoutClient() {
     const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement)?.value ?? "";
 
     try {
-      const origin = window.location.origin;
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({
             productId: i.product.id,
-            name: i.product.name,
-            price: i.product.price,
             quantity: i.quantity,
-            image: i.product.coverImage,
           })),
           contact: {
             firstName: get("firstName"),
@@ -133,8 +129,6 @@ export function CheckoutClient() {
             zip: get("zip"),
             country: get("country"),
           },
-          successUrl: `${origin}/checkout/success`,
-          cancelUrl: `${origin}/checkout/cancel`,
         }),
       });
 
