@@ -34,7 +34,7 @@ export function FeaturedDesigner() {
             <p className="mt-6 text-[10px] uppercase tracking-[0.35em] text-gold/50">
               {fd.attribution}
             </p>
-            <p className="mt-2 text-[9px] uppercase tracking-[0.3em] text-ivory/20">
+            <p className="mt-2 text-[9px] uppercase tracking-[0.3em] text-ivory/40">
               {fd.capsuleLabel}
             </p>
           </div>

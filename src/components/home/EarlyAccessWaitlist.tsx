@@ -80,7 +80,7 @@ export function EarlyAccessWaitlist() {
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder={w.namePlaceholder}
-                className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/25 focus:border-gold/60 focus:outline-none"
+                className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/40 focus:border-gold/60 focus:outline-none"
               />
             </label>
 
@@ -94,7 +94,7 @@ export function EarlyAccessWaitlist() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder={w.emailPlaceholder}
-                className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/25 focus:border-gold/60 focus:outline-none"
+                className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/40 focus:border-gold/60 focus:outline-none"
               />
             </label>
 
@@ -108,7 +108,7 @@ export function EarlyAccessWaitlist() {
                 value={country}
                 onChange={(event) => setCountry(event.target.value)}
                 placeholder={w.countryPlaceholder}
-                className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/25 focus:border-gold/60 focus:outline-none"
+                className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/40 focus:border-gold/60 focus:outline-none"
               />
             </label>
 
@@ -142,7 +142,7 @@ export function EarlyAccessWaitlist() {
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
                 placeholder={w.interestPlaceholder}
-                className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/25 focus:border-gold/60 focus:outline-none"
+                className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/40 focus:border-gold/60 focus:outline-none"
               />
             </label>
           </div>

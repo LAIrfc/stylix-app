@@ -314,7 +314,7 @@ export function AdvisorClient() {
               <p className="font-serif text-xl text-ivory/40">
                 {a.emptyResult}
               </p>
-              <p className="text-xs text-ivory/25 max-w-xs">
+              <p className="text-xs text-ivory/40 max-w-xs">
                 Complete the profile to the left and receive your symbolic styling rationale.
               </p>
             </div>
@@ -483,7 +483,7 @@ export function AdvisorClient() {
               <div className="border border-dashed border-ivory/10 px-8 py-6 text-center">
                 <p className="text-[10px] uppercase tracking-[0.3em] text-ivory/30">{a.luxuryInspirationSoon}</p>
                 <p className="mt-2 font-serif text-lg text-ivory/50">{a.luxuryInspirationTitle}</p>
-                <p className="mt-2 text-xs text-ivory/25">{a.luxuryInspirationNote}</p>
+                <p className="mt-2 text-xs text-ivory/40">{a.luxuryInspirationNote}</p>
               </div>
             </div>
           )}

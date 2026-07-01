@@ -113,7 +113,7 @@ export function CollectionPreview() {
                       {cp.celestialEyebrow}
                     </p>
                     <p className="font-serif text-xl text-ivory/30">{cp.celestialName}</p>
-                    <p className="mt-3 text-xs text-ivory/20 max-w-xs mx-auto">
+                    <p className="mt-3 text-xs text-ivory/40 max-w-xs mx-auto">
                       {cp.celestialPlaceholderDesc}
                     </p>
                     <Link

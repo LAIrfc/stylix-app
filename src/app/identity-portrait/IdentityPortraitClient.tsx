@@ -239,13 +239,13 @@ export function IdentityPortraitClient() {
                 />
                 <span
                   className={`text-[9px] uppercase tracking-[0.2em] transition-colors duration-300 ${
-                    idx <= currentStepIndex ? "text-ivory/60" : "text-ivory/20"
+                    idx <= currentStepIndex ? "text-ivory/60" : "text-ivory/40"
                   }`}
                 >
                   {s.label}
                 </span>
                 {idx < STEPS.length - 1 && (
-                  <span className="text-ivory/10 text-[8px] mx-1">&mdash;</span>
+                  <span className="text-ivory/30 text-[8px] mx-1">&mdash;</span>
                 )}
               </div>
             ))}
@@ -265,23 +265,25 @@ export function IdentityPortraitClient() {
             </p>
 
             <div
-              className="border border-dashed border-ivory/20 rounded-2xl p-12 cursor-pointer
-                hover:border-gold/40 transition-all duration-500 group"
+              className="border border-dashed border-ivory/15 rounded-2xl p-12 cursor-pointer
+                hover:border-gold/40 bg-ivory/[0.02] hover:bg-ivory/[0.04]
+                backdrop-blur-sm transition-all duration-500 group"
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={onDrop}
             >
               <div className="space-y-4">
                 <div className="w-16 h-16 mx-auto rounded-full border border-ivory/15 flex items-center justify-center
-                  group-hover:border-gold/30 transition-colors duration-500">
+                  group-hover:border-gold/30 group-hover:bg-gold/5 transition-all duration-500">
                   <svg className="w-6 h-6 text-ivory/30 group-hover:text-gold/60 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                    <circle cx="12" cy="12" r="4" strokeWidth={1.2} />
+                    <path strokeLinecap="round" strokeWidth={1.2} d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
                   </svg>
                 </div>
-                <p className="text-[11px] uppercase tracking-[0.3em] text-ivory/40 group-hover:text-ivory/60 transition-colors">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-ivory/40 group-hover:text-gold/60 transition-colors">
                   {ip.uploadPhoto}
                 </p>
-                <p className="text-xs text-ivory/20">JPG, PNG, WEBP</p>
+                <p className="text-xs text-ivory/40">JPG, PNG, WEBP</p>
               </div>
             </div>
 
@@ -336,8 +338,8 @@ export function IdentityPortraitClient() {
                   key={identity.id}
                   onClick={() => handleIdentitySelect(identity)}
                   className="p-5 rounded-xl border border-ivory/10
-                    hover:border-gold/30 bg-ink-soft/50 hover:bg-ink-soft
-                    transition-all duration-300 text-left group"
+                    hover:border-gold/30 hover:-translate-y-0.5 bg-ink-soft/50 hover:bg-ink-soft
+                    hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 text-left group"
                 >
                   <div className="text-2xl mb-2">{identity.icon}</div>
                   <p className="font-serif text-sm text-ivory group-hover:text-gold transition-colors">
@@ -346,7 +348,7 @@ export function IdentityPortraitClient() {
                   <p className="text-[10px] text-ivory/40 mt-1">
                     {isCn ? identity.nicknameCn : identity.nickname}
                   </p>
-                  <p className="text-[9px] text-ivory/25 mt-1">
+                  <p className="text-[9px] text-ivory/45 mt-1">
                     {(isCn ? identity.keywordsCn : identity.keywords).join(" · ")}
                   </p>
                 </button>
@@ -355,7 +357,7 @@ export function IdentityPortraitClient() {
 
             {/* Back */}
             <div className="text-center pt-2">
-              <button onClick={goBack} className="text-ivory/25 text-xs hover:text-ivory/50 transition-colors">
+              <button onClick={goBack} className="text-ivory/45 text-xs hover:text-ivory/50 transition-colors">
                 &larr; {ip.back}
               </button>
             </div>
@@ -376,12 +378,12 @@ export function IdentityPortraitClient() {
 
             <div className="py-12 border border-ivory/10 rounded-2xl bg-ink-soft/30">
               <p className="text-ivory/30 text-sm">{ip.quizComingSoon}</p>
-              <p className="text-ivory/20 text-xs mt-2">{ip.quizComingSoonSub}</p>
+              <p className="text-ivory/40 text-xs mt-2">{ip.quizComingSoonSub}</p>
             </div>
 
             <button
               onClick={() => setStep("identity")}
-              className="text-ivory/25 text-xs hover:text-ivory/50 transition-colors"
+              className="text-ivory/45 text-xs hover:text-ivory/50 transition-colors"
             >
               &larr; {ip.quizBack}
             </button>
@@ -441,7 +443,7 @@ export function IdentityPortraitClient() {
 
             {/* Skip + Back */}
             <div className="flex items-center justify-between pt-2">
-              <button onClick={goBack} className="text-ivory/25 text-xs hover:text-ivory/50 transition-colors">
+              <button onClick={goBack} className="text-ivory/45 text-xs hover:text-ivory/50 transition-colors">
                 &larr; {ip.back}
               </button>
               <button
@@ -490,7 +492,7 @@ export function IdentityPortraitClient() {
             </div>
 
             <div className="text-center pt-2">
-              <button onClick={goBack} className="text-ivory/25 text-xs hover:text-ivory/50 transition-colors">
+              <button onClick={goBack} className="text-ivory/45 text-xs hover:text-ivory/50 transition-colors">
                 &larr; {ip.back}
               </button>
             </div>
@@ -518,19 +520,23 @@ export function IdentityPortraitClient() {
                         ? "text-ivory"
                         : idx < generationPhase
                           ? "text-ivory/30"
-                          : "text-ivory/10"
+                          : "text-ivory/30"
                     } transition-colors duration-500`}
                   >
                     {phase}
                   </p>
                   {idx < GENERATION_PHASES.length - 1 && idx <= generationPhase && (
-                    <p className="text-gold/40 mt-2 text-xs">&#10022;</p>
+                    <p className="text-gold/55 mt-2 text-xs">&#10022;</p>
                   )}
                 </div>
               ))}
             </div>
             <div className="flex justify-center">
-              <div className="w-2 h-2 rounded-full bg-gold/60 animate-pulse" />
+              <div className="relative w-12 h-12 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border border-gold/20 animate-spin" style={{ animationDuration: "3s" }} />
+                <div className="absolute inset-1 rounded-full border-t border-gold/50 animate-spin" style={{ animationDuration: "2s" }} />
+                <div className="w-2 h-2 rounded-full bg-gold/60 animate-pulse" />
+              </div>
             </div>
           </div>
         </div>
@@ -552,13 +558,13 @@ export function IdentityPortraitClient() {
                   />
                 ) : (
                   <div className="w-full aspect-square flex items-center justify-center">
-                    <p className="text-ivory/20 text-sm">{ip.resultUnavailable}</p>
+                    <p className="text-ivory/40 text-sm">{ip.resultUnavailable}</p>
                   </div>
                 )}
               </div>
 
               {/* Info panel */}
-              <div className="space-y-6 overflow-y-auto max-h-[80vh]">
+              <div className="space-y-6 overflow-y-auto max-h-[80vh] pr-1">
                 {/* Header: name + code */}
                 <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.4em] text-ivory/30">
@@ -600,7 +606,7 @@ export function IdentityPortraitClient() {
                 </div>
 
                 {/* 别人眼里的你 */}
-                <div className="space-y-2">
+                <div className="border border-ivory/6 rounded-lg p-4 space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-gold/60">
                     {ip.othersViewLabel}
                   </p>
@@ -610,7 +616,7 @@ export function IdentityPortraitClient() {
                 </div>
 
                 {/* 你的另一面 */}
-                <div className="space-y-2">
+                <div className="border border-ivory/6 rounded-lg p-4 space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-ivory/40">
                     {ip.shadowTraitLabel}
                   </p>

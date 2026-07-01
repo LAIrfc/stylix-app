@@ -20,17 +20,23 @@ export function LanguageSwitcher() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function select(l: Locale) {
+  function handleSelect(l: Locale) {
     setLocale(l);
     setOpen(false);
   }
 
+  function handleToggle(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen((o) => !o);
+  }
+
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative z-[60]">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] text-ivory-dim transition-colors hover:text-gold"
+        onClick={handleToggle}
+        className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] text-ivory-dim transition-colors hover:text-gold cursor-pointer select-none"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
@@ -48,7 +54,7 @@ export function LanguageSwitcher() {
       {open && (
         <div
           role="listbox"
-          className="absolute right-0 top-full mt-2 min-w-[9rem] rounded border border-ivory/10 bg-ink-deep py-1 shadow-xl"
+          className="absolute right-0 top-full mt-2 min-w-[9rem] rounded border border-ivory/10 bg-ink-deep py-1 shadow-xl z-[70]"
         >
           {LOCALES.map((l) => (
             <button
@@ -56,8 +62,12 @@ export function LanguageSwitcher() {
               role="option"
               aria-selected={l === locale}
               type="button"
-              onClick={() => select(l)}
-              className={`w-full px-4 py-2 text-left text-[11px] tracking-[0.18em] transition-colors hover:bg-ivory/5 hover:text-gold ${
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSelect(l);
+              }}
+              className={`w-full px-4 py-2 text-left text-[11px] tracking-[0.18em] transition-colors hover:bg-ivory/5 hover:text-gold cursor-pointer ${
                 l === locale ? "text-gold" : "text-ivory-dim"
               }`}
             >

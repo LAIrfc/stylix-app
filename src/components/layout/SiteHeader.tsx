@@ -28,7 +28,7 @@ export function SiteHeader() {
   ];
 
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-ivory/10 bg-ink-deep/92 backdrop-blur-md">
+    <header className="fixed top-0 z-50 w-full border-b border-ivory/10 bg-ink-deep/92 backdrop-blur-md" style={{ overflow: "visible" }}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-10">
         <Link
           href="/"
@@ -36,12 +36,12 @@ export function SiteHeader() {
         >
           Stylix
         </Link>
-        <nav className="hidden items-center gap-10 md:flex">
+        <nav className="hidden items-center gap-8 lg:gap-10 md:flex">
           {nav.slice(0, 2).map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`text-[11px] uppercase tracking-[0.22em] transition-colors hover:text-gold ${
+              className={`flex items-center text-[11px] uppercase tracking-[0.15em] transition-colors hover:text-gold whitespace-nowrap ${
                 pathname === item.href ? "text-gold" : "text-ivory-dim"
               }`}
             >
@@ -51,7 +51,7 @@ export function SiteHeader() {
 
           {/* Try-On dropdown */}
           <div
-            className="relative"
+            className="relative flex items-center"
             onMouseEnter={() => {
               if (tryOnTimeout.current) clearTimeout(tryOnTimeout.current);
               setTryOnOpen(true);
@@ -62,7 +62,7 @@ export function SiteHeader() {
           >
             <button
               type="button"
-              className={`text-[11px] uppercase tracking-[0.22em] transition-colors hover:text-gold ${
+              className={`text-[11px] uppercase tracking-[0.15em] transition-colors hover:text-gold whitespace-nowrap ${
                 pathname === "/try-on" || pathname === "/identity-portrait"
                   ? "text-gold"
                   : "text-ivory-dim"
@@ -72,13 +72,13 @@ export function SiteHeader() {
             </button>
             {tryOnOpen && (
               <div className="absolute left-1/2 top-full -translate-x-1/2 pt-3 z-50">
-                <div className="border border-ivory/10 bg-ink-deep/95 backdrop-blur-md rounded-lg py-2 min-w-[180px] shadow-luxury">
+                <div className="border border-ivory/10 bg-ink-deep/95 backdrop-blur-xl rounded-lg py-2 min-w-[180px] shadow-luxury">
                   {tryOnItems.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setTryOnOpen(false)}
-                      className={`block px-5 py-2.5 text-[11px] uppercase tracking-[0.15em] transition-colors hover:text-gold hover:bg-gold/5 ${
+                      className={`block px-5 py-2.5 text-[11px] uppercase tracking-[0.15em] text-center transition-colors hover:text-gold hover:bg-gold/5 ${
                         pathname === item.href ? "text-gold" : "text-ivory-dim"
                       }`}
                     >
@@ -94,7 +94,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={`text-[11px] uppercase tracking-[0.22em] transition-colors hover:text-gold ${
+              className={`flex items-center text-[11px] uppercase tracking-[0.15em] transition-colors hover:text-gold whitespace-nowrap ${
                 pathname === item.href ? "text-gold" : "text-ivory-dim"
               }`}
             >

@@ -60,7 +60,7 @@ function CollectionProductCard({ product }: { product: (typeof products)[0] }) {
           )}
           {isDesigner && product.collaboratorName && (
             <div className="absolute top-3 left-3">
-              <span className="bg-amber-900/80 px-2 py-1 text-[8px] uppercase tracking-[0.25em] text-amber-100">
+              <span className="bg-stone-800/80 px-2 py-1 text-[8px] uppercase tracking-[0.25em] text-stone-200">
                 {t.collectionPage.badges.selectedByStylix}
               </span>
             </div>
@@ -68,23 +68,23 @@ function CollectionProductCard({ product }: { product: (typeof products)[0] }) {
         </div>
         <div className="pt-5 pb-8">
           {isDesigner && product.collaboratorName && (
-            <p className="text-[9px] uppercase tracking-[0.3em] text-amber-700/70 mb-1">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-400 mb-1">
               {product.collaboratorName} · {t.collectionPage.collaboratorCapsule}
             </p>
           )}
           {!isDesigner && product.zodiacAffinity && product.zodiacAffinity.length > 0 && (
-            <p className="text-[9px] uppercase tracking-[0.3em] text-amber-700/60 mb-2">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-400/80 mb-2">
               {product.zodiacAffinity.slice(0, 3).join(" · ")}
             </p>
           )}
-          <h3 className="font-serif text-lg text-stone-900 group-hover:text-amber-800 transition-colors duration-300">
+          <h3 className="font-serif text-lg text-stone-800 group-hover:text-stone-600 transition-colors duration-300">
             {product.name}
           </h3>
           <p className="mt-1 text-sm text-stone-500">{product.subtitle}</p>
           {isArchive ? (
             <p className="mt-3 text-xs text-stone-400 italic">{t.collectionPage.conceptPieceArchive}</p>
           ) : (
-            <p className="mt-3 text-sm font-medium text-stone-800">
+            <p className="mt-3 text-sm font-medium text-stone-700">
               {product.priceLabel ?? `$${product.price.toLocaleString()}`}
             </p>
           )}
@@ -151,13 +151,13 @@ export function CollectionView() {
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <div className="border-b border-stone-200 bg-white py-14">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
-          <p className="text-[10px] uppercase tracking-[0.5em] text-amber-700/70">
+          <p className="text-[10px] uppercase tracking-[0.5em] text-stone-400">
             {t.collectionPage.pageEyebrow}
           </p>
-          <h1 className="mt-4 font-serif text-4xl text-stone-900 sm:text-5xl">
+          <h1 className="mt-4 font-serif text-4xl text-stone-800 sm:text-5xl">
             {t.collectionPage.pageTitle}
           </h1>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-500">
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-400">
             {t.collectionPage.pageSubtitle}
           </p>
         </div>
@@ -188,7 +188,7 @@ export function CollectionView() {
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10">
         {/* ── Collection description ─────────────────────────────────────── */}
         <div className="mb-10 max-w-2xl">
-          <p className="text-[9px] uppercase tracking-[0.4em] text-amber-700/60 mb-2">
+          <p className="text-[9px] uppercase tracking-[0.4em] text-stone-400 mb-2">
             {t.collectionPage.tabs[tabTranslationKey[activeTab]].eyebrow}
           </p>
           <p className="text-sm leading-relaxed text-stone-500">

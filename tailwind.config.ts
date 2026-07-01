@@ -38,8 +38,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        serif: ["var(--font-serif)", "Georgia", "serif"],
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "var(--font-serif-cn)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "var(--font-sans-cn)", "system-ui", "sans-serif"],
       },
       backgroundImage: {
         "gold-rose": "linear-gradient(135deg, #c9a962 0%, #b76e79 55%, #c9a962 100%)",
