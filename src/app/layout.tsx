@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { I18nProvider } from "@/lib/i18n/context";
+import { AuthProvider } from "@/lib/auth/AuthContext";
 import { CartProvider } from "@/lib/cart/CartContext";
 import { OrderProvider } from "@/lib/order/OrderContext";
 import { AnalyticsPageView } from "@/lib/analytics/AnalyticsPageView";
@@ -69,6 +70,7 @@ export default function RootLayout({
     <html lang="en" className={`${serif.variable} ${sans.variable} ${serifCn.variable} ${sansCn.variable}`}>
       <body className="min-h-screen font-sans">
         <I18nProvider>
+          <AuthProvider>
           <CartProvider>
             <OrderProvider>
               <AnalyticsPageView />
@@ -77,6 +79,7 @@ export default function RootLayout({
               <SiteFooter />
             </OrderProvider>
           </CartProvider>
+          </AuthProvider>
         </I18nProvider>
       </body>
     </html>

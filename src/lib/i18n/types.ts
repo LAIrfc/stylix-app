@@ -26,6 +26,62 @@ export const LOCALE_SHORT_LABELS: Record<Locale, string> = {
 export const RTL_LOCALES: Locale[] = ["ar"];
 
 export interface Translations {
+  auth: {
+    loginTitle: string;
+    loginSubtitle: string;
+    registerTitle: string;
+    registerSubtitle: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    loginButton: string;
+    registerButton: string;
+    loading: string;
+    switchToRegister: string;
+    switchToLogin: string;
+    errorInvalidEmail: string;
+    errorGeneric: string;
+    login: string;
+    myProfile: string;
+    logout: string;
+  };
+  profile: {
+    title: string;
+    tabs: {
+      cart: string;
+      jewelry: string;
+      portrait: string;
+    };
+    cart: {
+      empty: string;
+      emptySub: string;
+      browseCollection: string;
+    };
+    jewelry: {
+      empty: string;
+      emptySub: string;
+      browseCollection: string;
+      addedOn: string;
+      upload: string;
+      uploadHint: string;
+      namePlaceholder: string;
+      descPlaceholder: string;
+      save: string;
+      cancel: string;
+      delete: string;
+    };
+    portrait: {
+      empty: string;
+      emptySub: string;
+      goToPortrait: string;
+      generatedOn: string;
+      viewDetails: string;
+    };
+    memberSince: string;
+  };
   nav: {
     collection: string;
     advisor: string;
