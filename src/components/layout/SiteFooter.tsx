@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/context";
 
-const social = [
-  { href: "#", label: "Instagram" },
-  { href: "#", label: "Pinterest" },
-  { href: "#", label: "LinkedIn" },
-];
-
 export function SiteFooter() {
   const { t } = useI18n();
   const f = t.footer;
+
+  const social = [
+    { href: "#", label: f.social.instagram },
+    { href: "#", label: f.social.pinterest },
+    { href: "#", label: f.social.linkedin },
+  ];
 
   const collections = [
     { href: "/collection", label: f.allPieces },

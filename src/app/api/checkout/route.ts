@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { products } from "@/lib/data/products";
 
 const SHIPPING_THRESHOLD = 500;
 const TAX_RATE = 0.08875;
+const MAX_QUANTITY_PER_ITEM = 10;
+const MAX_ITEMS = 20;
 
-interface LineItem {
+interface CartItem {
   productId: string;
-  name: string;
-  price: number;
   quantity: number;
-  image?: string;
 }
 
 interface ContactInfo {
@@ -29,17 +29,23 @@ interface ShippingInfo {
 }
 
 interface CheckoutRequest {
-  items: LineItem[];
+  items: CartItem[];
   contact: ContactInfo;
   shipping: ShippingInfo;
-  successUrl: string;
-  cancelUrl: string;
 }
 
 function generateOrderId(): string {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `STX-${ts}-${rand}`;
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
+}
+
+function getSiteUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 }
 
 export async function POST(req: NextRequest) {
@@ -56,42 +62,57 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const { items, contact, shipping, successUrl, cancelUrl } = body;
+  const { items, contact, shipping } = body;
 
-  if (!items?.length) {
-    return NextResponse.json({ error: "No items provided." }, { status: 400 });
+  if (!items?.length || items.length > MAX_ITEMS) {
+    return NextResponse.json({ error: "Invalid items." }, { status: 400 });
   }
-  if (!contact?.email || !contact.firstName || !contact.lastName) {
+  if (!contact?.email || !isValidEmail(contact.email) || !contact.firstName || !contact.lastName) {
     return NextResponse.json({ error: "Contact information incomplete." }, { status: 400 });
   }
   if (!shipping?.address1 || !shipping.city || !shipping.state || !shipping.zip) {
     return NextResponse.json({ error: "Shipping address incomplete." }, { status: 400 });
   }
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const resolvedItems = items.map((item) => {
+    const product = products.find((p) => p.id === item.productId);
+    if (!product) return null;
+    const qty = Math.max(1, Math.min(item.quantity, MAX_QUANTITY_PER_ITEM));
+    return { product, quantity: qty };
+  });
+
+  if (resolvedItems.some((r) => r === null)) {
+    return NextResponse.json({ error: "One or more products not found." }, { status: 400 });
+  }
+
+  const validItems = resolvedItems as { product: (typeof products)[number]; quantity: number }[];
+
+  const subtotal = validItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
   const shippingFree = subtotal >= SHIPPING_THRESHOLD;
   const taxCents = Math.round(subtotal * TAX_RATE * 100);
   const subtotalCents = Math.round(subtotal * 100);
   const orderId = generateOrderId();
 
+  const siteUrl = getSiteUrl();
+
   const metadata: Record<string, string> = {
     order_id: orderId,
     contact_email: contact.email,
-    contact_first: contact.firstName,
-    contact_last: contact.lastName,
-    contact_phone: contact.phone ?? "",
-    shipping_address1: shipping.address1,
-    shipping_address2: shipping.address2 ?? "",
-    shipping_city: shipping.city,
-    shipping_state: shipping.state,
-    shipping_zip: shipping.zip,
-    shipping_country: shipping.country ?? "US",
+    contact_first: contact.firstName.slice(0, 100),
+    contact_last: contact.lastName.slice(0, 100),
+    contact_phone: (contact.phone ?? "").slice(0, 20),
+    shipping_address1: shipping.address1.slice(0, 200),
+    shipping_address2: (shipping.address2 ?? "").slice(0, 200),
+    shipping_city: shipping.city.slice(0, 100),
+    shipping_state: shipping.state.slice(0, 50),
+    shipping_zip: shipping.zip.slice(0, 20),
+    shipping_country: (shipping.country ?? "US").slice(0, 5),
     shipping_free: String(shippingFree),
     subtotal_cents: String(subtotalCents),
     tax_cents: String(taxCents),
     items_json: JSON.stringify(
-      items.map((i) => ({ id: i.productId, name: i.name, price: i.price, qty: i.quantity }))
-    ),
+      validItems.map((i) => ({ id: i.product.id, name: i.product.name, price: i.product.price, qty: i.quantity }))
+    ).slice(0, 500),
   };
 
   try {
@@ -100,14 +121,14 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card", "link"],
-      line_items: items.map((item) => ({
+      line_items: validItems.map((item) => ({
         price_data: {
           currency: "usd",
           product_data: {
-            name: item.name,
-            ...(item.image ? { images: [item.image] } : {}),
+            name: item.product.name,
+            ...(item.product.coverImage ? { images: [`${siteUrl}${item.product.coverImage}`] } : {}),
           },
-          unit_amount: Math.round(item.price * 100),
+          unit_amount: Math.round(item.product.price * 100),
         },
         quantity: item.quantity,
       })),
@@ -123,8 +144,8 @@ export async function POST(req: NextRequest) {
       ],
       allow_promotion_codes: true,
       metadata,
-      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl,
+      success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/checkout/cancel`,
     });
 
     return NextResponse.json({ url: session.url });

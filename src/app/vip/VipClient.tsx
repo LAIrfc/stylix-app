@@ -6,60 +6,10 @@ import { generateProfile } from "@/lib/atelier/engine";
 import type { AtelierAnswers, AtelierProfile } from "@/lib/atelier/engine";
 import { track } from "@/lib/analytics/tracker";
 import { EVENTS } from "@/lib/analytics/events";
+import { useI18n } from "@/lib/i18n/context";
+import type { Translations } from "@/lib/i18n/types";
 
-// ── Step definitions ──────────────────────────────────────────────────────────
-
-const STEPS = [
-  { num: "01", label: "Identity" },
-  { num: "02", label: "Occasion" },
-  { num: "03", label: "Aesthetic" },
-  { num: "04", label: "Investment" },
-  { num: "05", label: "Story" },
-  { num: "06", label: "Signature" },
-] as const;
-
-const IDENTITY_OPTIONS = [
-  { value: "female", label: "Female" },
-  { value: "male", label: "Male" },
-  { value: "non-binary", label: "Non-binary" },
-  { value: "couple", label: "Couple" },
-  { value: "gift-giver", label: "Gift Giver" },
-];
-
-const OCCASION_OPTIONS = [
-  { value: "wedding", label: "Wedding" },
-  { value: "business-dinner", label: "Business Dinner" },
-  { value: "daily-luxury", label: "Daily Luxury" },
-  { value: "travel", label: "Travel" },
-  { value: "anniversary", label: "Anniversary" },
-  { value: "special-event", label: "Special Event" },
-  { value: "gift", label: "Gift" },
-];
-
-const AESTHETIC_OPTIONS = [
-  { value: "quiet-luxury", label: "Quiet Luxury" },
-  { value: "old-money", label: "Old Money" },
-  { value: "romantic", label: "Romantic" },
-  { value: "minimalist", label: "Minimalist" },
-  { value: "artistic", label: "Artistic" },
-  { value: "mystical", label: "Mystical" },
-  { value: "avant-garde", label: "Avant-garde" },
-];
-
-const INVESTMENT_OPTIONS = [
-  { value: "under-300", label: "Under $300" },
-  { value: "300-1000", label: "$300 – $1,000" },
-  { value: "1000-5000", label: "$1,000 – $5,000" },
-  { value: "5000-plus", label: "$5,000+" },
-  { value: "bespoke", label: "Bespoke" },
-];
-
-const LOADING_STEPS = [
-  "Reading aesthetic DNA",
-  "Mapping personality archetype",
-  "Matching jewelry symbolism",
-  "Building luxury profile",
-];
+type VipConsultation = Translations["vip"]["consultation"];
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -87,10 +37,10 @@ function OptionCard({
   );
 }
 
-function ProgressBar({ step }: { step: number }) {
+function ProgressBar({ step, vc }: { step: number; vc: VipConsultation }) {
   return (
     <div className="flex items-center gap-0 overflow-x-auto pb-1">
-      {STEPS.map((s, i) => {
+      {vc.steps.map((s, i) => {
         const stepNum = i + 1;
         const isActive = stepNum === step;
         const isDone = stepNum < step;
@@ -102,8 +52,8 @@ function ProgressBar({ step }: { step: number }) {
                   isActive
                     ? "text-gold"
                     : isDone
-                    ? "text-gold/40"
-                    : "text-ivory/20"
+                    ? "text-gold/50"
+                    : "text-ivory/35"
                 }`}
               >
                 {s.num}
@@ -113,14 +63,14 @@ function ProgressBar({ step }: { step: number }) {
                   isActive
                     ? "text-gold"
                     : isDone
-                    ? "text-ivory/40"
-                    : "text-ivory/15"
+                    ? "text-ivory/50"
+                    : "text-ivory/35"
                 }`}
               >
                 {s.label}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < vc.steps.length - 1 && (
               <span className="h-px w-4 bg-ivory/10 shrink-0 sm:w-6" />
             )}
           </div>
@@ -159,6 +109,9 @@ function ProfileSection({ label, children }: { label: string; children: React.Re
 
 // ── Main wizard ───────────────────────────────────────────────────────────────
 export function VipClient() {
+  const { t } = useI18n();
+  const vc = t.vip.consultation;
+
   const [step, setStep] = useState(1);
   const [identity, setIdentity] = useState<string | null>(null);
   const [occasion, setOccasion] = useState<string | null>(null);
@@ -223,7 +176,7 @@ export function VipClient() {
       const interval = setInterval(() => {
         i++;
         setGeneratingStep(i);
-        if (i >= LOADING_STEPS.length) {
+        if (i >= vc.loadingSteps.length) {
           clearInterval(interval);
           const generated = generateProfile(answers);
           setProfile(generated);
@@ -280,15 +233,15 @@ export function VipClient() {
           <div className="flex items-center gap-3 mb-5">
             <span className="h-px w-8 bg-gold/40" />
             <p className="text-[10px] uppercase tracking-[0.55em] text-gold/70">
-              Private Atelier · Stylix
+              {vc.headerEyebrow}
             </p>
           </div>
           <h1 className="font-serif text-3xl text-ivory sm:text-4xl">
-            {isStep6 ? "Your Stylix Signature Profile" : "Personal Consultation"}
+            {isStep6 ? vc.headerTitleResult : vc.headerTitle}
           </h1>
           {!isStep6 && (
             <div className="mt-6 overflow-x-auto">
-              <ProgressBar step={step} />
+              <ProgressBar step={step} vc={vc} />
             </div>
           )}
         </div>
@@ -301,6 +254,7 @@ export function VipClient() {
           <StepPane stepKey={step}>
             <StepContent
               step={step}
+              vc={vc}
               identity={identity}
               setIdentity={setIdentity}
               occasion={occasion}
@@ -321,7 +275,7 @@ export function VipClient() {
                   onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3 | 4 | 5 | 6)}
                   className="text-[10px] uppercase tracking-[0.3em] text-ivory/30 hover:text-ivory/60 transition-colors"
                 >
-                  ← Back
+                  ← {vc.back}
                 </button>
               ) : (
                 <span />
@@ -334,7 +288,7 @@ export function VipClient() {
                   !canContinue() ? "opacity-40 pointer-events-none" : ""
                 }`}
               >
-                {step === 5 ? "Generate My Profile" : "Continue"}
+                {step === 5 ? vc.generate : vc.continue}
               </button>
             </div>
           </StepPane>
@@ -343,7 +297,7 @@ export function VipClient() {
         {/* Step 6 — generating or result */}
         {step === 6 && generating && (
           <StepPane stepKey={60}>
-            <GeneratingView generatingStep={generatingStep} />
+            <GeneratingView generatingStep={generatingStep} vc={vc} />
           </StepPane>
         )}
 
@@ -359,6 +313,7 @@ export function VipClient() {
               submitError={submitError}
               onEmailSubmit={handleEmailSubmit}
               onReset={resetWizard}
+              vc={vc}
             />
           </StepPane>
         )}
@@ -370,6 +325,7 @@ export function VipClient() {
 // ── StepContent ───────────────────────────────────────────────────────────────
 function StepContent({
   step,
+  vc,
   identity, setIdentity,
   occasion, setOccasion,
   aesthetic, setAesthetic,
@@ -377,6 +333,7 @@ function StepContent({
   story, setStory,
 }: {
   step: number;
+  vc: VipConsultation;
   identity: string | null; setIdentity: (v: string) => void;
   occasion: string | null; setOccasion: (v: string) => void;
   aesthetic: string | null; setAesthetic: (v: string) => void;
@@ -385,30 +342,30 @@ function StepContent({
 }) {
   const stepData = [
     {
-      title: "Tell us who you are",
-      subtitle: "Every masterpiece begins with understanding its owner.",
-      options: IDENTITY_OPTIONS,
+      title: vc.identity.title,
+      subtitle: vc.identity.subtitle,
+      options: vc.identity.options,
       value: identity,
       setValue: setIdentity,
     },
     {
-      title: "Tell us your occasion",
-      subtitle: "Jewelry exists to celebrate meaningful moments.",
-      options: OCCASION_OPTIONS,
+      title: vc.occasion.title,
+      subtitle: vc.occasion.subtitle,
+      options: vc.occasion.options,
       value: occasion,
       setValue: setOccasion,
     },
     {
-      title: "Describe your aesthetic",
-      subtitle: "Beauty is deeply personal.",
-      options: AESTHETIC_OPTIONS,
+      title: vc.aesthetic.title,
+      subtitle: vc.aesthetic.subtitle,
+      options: vc.aesthetic.options,
       value: aesthetic,
       setValue: setAesthetic,
     },
     {
-      title: "Your investment preference",
-      subtitle: "Define the level of craftsmanship you are exploring.",
-      options: INVESTMENT_OPTIONS,
+      title: vc.investment.title,
+      subtitle: vc.investment.subtitle,
+      options: vc.investment.options,
       value: investment,
       setValue: setInvestment,
     },
@@ -419,7 +376,7 @@ function StepContent({
     return (
       <div className="max-w-2xl">
         <p className="text-[10px] uppercase tracking-[0.4em] text-gold/60 mb-4">
-          {STEPS[step - 1].num} · {STEPS[step - 1].label}
+          {vc.steps[step - 1].num} · {vc.steps[step - 1].label}
         </p>
         <h2 className="font-serif text-2xl text-ivory sm:text-3xl mb-2">{s.title}</h2>
         <p className="text-sm text-ivory/50 mb-10">{s.subtitle}</p>
@@ -441,24 +398,24 @@ function StepContent({
     return (
       <div className="max-w-2xl">
         <p className="text-[10px] uppercase tracking-[0.4em] text-gold/60 mb-4">
-          05 · Story
+          {vc.steps[4].num} · {vc.story.label}
         </p>
         <h2 className="font-serif text-2xl text-ivory sm:text-3xl mb-2">
-          Tell our atelier director your vision
+          {vc.story.title}
         </h2>
         <p className="text-sm text-ivory/50 mb-10">
-          What story do you want your jewelry to tell?
+          {vc.story.subtitle}
         </p>
         <textarea
           value={story}
           onChange={(e) => setStory(e.target.value)}
           rows={7}
-          placeholder="Describe the occasion, the feeling you want to carry, the symbolism that matters to you, or any reference that speaks to your vision."
+          placeholder={vc.story.placeholder}
           className="w-full border border-ivory/15 bg-ink-soft/20 px-5 py-4 text-sm text-ivory placeholder-ivory/20 focus:border-gold/50 focus:outline-none transition-colors resize-none"
         />
-        <p className="mt-2 text-[9px] text-ivory/25">
+        <p className="mt-2 text-[9px] text-ivory/40">
           {story.trim().length < 10
-            ? `${10 - story.trim().length} more character${10 - story.trim().length === 1 ? "" : "s"} to continue`
+            ? `${10 - story.trim().length} ${vc.story.charHint}`
             : ""}
         </p>
       </div>
@@ -469,25 +426,25 @@ function StepContent({
 }
 
 // ── GeneratingView ────────────────────────────────────────────────────────────
-function GeneratingView({ generatingStep }: { generatingStep: number }) {
+function GeneratingView({ generatingStep, vc }: { generatingStep: number; vc: VipConsultation }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="flex items-center gap-3 mb-12">
         <span className="h-px w-8 bg-gold/30" />
         <p className="text-[10px] uppercase tracking-[0.55em] text-gold/50">
-          Analyzing your luxury profile
+          {vc.loadingTitle}
         </p>
         <span className="h-px w-8 bg-gold/30" />
       </div>
       <div className="space-y-5 w-full max-w-xs">
-        {LOADING_STEPS.map((label, i) => {
+        {vc.loadingSteps.map((label, i) => {
           const done = i < generatingStep;
           const active = i === generatingStep;
           return (
             <div key={label} className="flex items-center gap-4">
               <div className={`h-px flex-1 transition-all duration-500 ${done ? "bg-gold/50" : "bg-ivory/10"}`} />
               <p className={`text-[10px] uppercase tracking-[0.25em] transition-colors duration-300 ${
-                done ? "text-gold/60" : active ? "text-ivory/70 animate-pulse" : "text-ivory/20"
+                done ? "text-gold/60" : active ? "text-ivory/70 animate-pulse" : "text-ivory/35"
               }`}>
                 {label}
               </p>
@@ -511,6 +468,7 @@ function ProfileView({
   submitError,
   onEmailSubmit,
   onReset,
+  vc,
 }: {
   profile: AtelierProfile;
   answers: AtelierAnswers;
@@ -521,13 +479,16 @@ function ProfileView({
   submitError: string | null;
   onEmailSubmit: (e: React.FormEvent) => void;
   onReset: () => void;
+  vc: VipConsultation;
 }) {
+  const r = vc.result;
+
   return (
     <div className="max-w-2xl space-y-6">
 
       {/* Archetype card */}
       <div className="border border-gold/25 bg-gradient-to-b from-ink-soft/60 to-ink-deep px-8 py-8">
-        <p className="text-[9px] uppercase tracking-[0.45em] text-gold/60 mb-3">Luxury Archetype</p>
+        <p className="text-[9px] uppercase tracking-[0.45em] text-gold/60 mb-3">{r.archetypeLabel}</p>
         <p className="font-serif text-3xl text-ivory leading-tight sm:text-4xl">{profile.archetype}</p>
         <div className="mt-5 flex flex-wrap gap-2">
           {[answers.identity, answers.occasion, answers.aesthetic].map((tag) => (
@@ -542,35 +503,35 @@ function ProfileView({
       </div>
 
       {/* Profile sections */}
-      <ProfileSection label="Style DNA">
+      <ProfileSection label={r.styleDna}>
         <p>{profile.styleDna}</p>
       </ProfileSection>
 
-      <ProfileSection label="Occasion Match">
+      <ProfileSection label={r.occasionMatch}>
         <p>{profile.occasionMatch}</p>
       </ProfileSection>
 
-      <ProfileSection label="Recommended Collection">
+      <ProfileSection label={r.recommendedCollection}>
         <p className="font-serif text-base text-ivory mb-2">{profile.collection}</p>
-        <p className="text-ivory/50 text-xs">Curated based on your investment preference and aesthetic profile.</p>
+        <p className="text-ivory/50 text-xs">{r.collectionNote}</p>
       </ProfileSection>
 
-      <ProfileSection label="Why This Piece">
+      <ProfileSection label={r.whyThisPiece}>
         <p className="italic">{profile.whyPiece}</p>
       </ProfileSection>
 
       {/* Email capture */}
       <div className="border border-ivory/10 bg-ink-soft/20 px-7 py-8 mt-8">
-        <p className="text-[9px] uppercase tracking-[0.4em] text-gold/60 mb-3">Save Your Profile</p>
-        <p className="font-serif text-lg text-ivory mb-1">Your Stylix Signature Profile</p>
+        <p className="text-[9px] uppercase tracking-[0.4em] text-gold/60 mb-3">{r.saveProfileLabel}</p>
+        <p className="font-serif text-lg text-ivory mb-1">{r.saveProfileTitle}</p>
         <p className="text-sm text-ivory/50 mb-6">
-          Enter your email and we will send you this profile along with personalised recommendations from our atelier.
+          {r.saveProfileSubtitle}
         </p>
 
         {submitted ? (
           <div className="border border-gold/20 px-6 py-5 text-center">
-            <p className="font-serif text-base text-ivory mb-1">Your profile has been sent.</p>
-            <p className="text-xs text-ivory/40">Check your inbox for your Stylix Signature Profile.</p>
+            <p className="font-serif text-base text-ivory mb-1">{r.profileSentTitle}</p>
+            <p className="text-xs text-ivory/40">{r.profileSentSubtitle}</p>
           </div>
         ) : (
           <form onSubmit={onEmailSubmit} className="space-y-4">
@@ -590,7 +551,7 @@ function ProfileView({
               disabled={submitting || !email.includes("@")}
               className="w-full py-4 text-[11px] uppercase tracking-[0.25em] font-medium bg-gold/90 text-ink-deep hover:bg-gold transition-colors disabled:opacity-40 disabled:pointer-events-none"
             >
-              {submitting ? "Saving…" : "Save My Profile"}
+              {submitting ? r.saving : r.saveButton}
             </button>
           </form>
         )}
@@ -602,14 +563,14 @@ function ProfileView({
           href="/collection"
           className="inline-flex items-center justify-center px-10 py-4 text-[11px] uppercase tracking-[0.25em] font-medium border border-gold/30 text-gold hover:border-gold transition-colors"
         >
-          Explore Collection
+          {r.exploreCollection}
         </Link>
         <button
           type="button"
           onClick={onReset}
-          className="text-[10px] uppercase tracking-[0.3em] text-ivory/25 hover:text-ivory/50 transition-colors"
+          className="text-[10px] uppercase tracking-[0.3em] text-ivory/45 hover:text-ivory/60 transition-colors"
         >
-          Begin Again
+          {r.beginAgain}
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import type { DbOrder } from "@/lib/types/database";
 
@@ -10,23 +11,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid session_id." }, { status: 400 });
   }
 
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    return NextResponse.json({ error: "Service unavailable." }, { status: 503 });
+  }
+
   try {
+    const stripe = new Stripe(secretKey, { apiVersion: "2026-04-22.dahlia" });
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status !== "paid") {
+      return NextResponse.json({ error: "Session not paid." }, { status: 403 });
+    }
+
     const db = getSupabaseAdmin();
     const { data, error } = await db
       .schema("public")
       .from("orders")
-      .select("*")
+      .select("order_id, status, total_cents, currency, items, created_at")
       .eq("stripe_session_id", sessionId)
       .single();
 
     if (error && error.code !== "PGRST116") {
-      console.error("[orders] lookup failed", { code: error.code, message: error.message });
+      console.error("[orders] lookup failed", { code: error.code });
       return NextResponse.json({ error: "Order lookup failed." }, { status: 500 });
     }
 
-    return NextResponse.json({ order: (data as DbOrder) ?? null });
+    return NextResponse.json({ order: data ?? null });
   } catch (err) {
     console.error("[orders] unexpected error", err);
-    return NextResponse.json({ error: "Internal error." }, { status: 500 });
+    return NextResponse.json({ error: "Order lookup failed." }, { status: 500 });
   }
 }

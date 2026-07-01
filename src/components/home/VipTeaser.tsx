@@ -17,7 +17,7 @@ export function VipTeaser() {
           {v.services.map((s) => (
             <div
               key={s.title}
-              className="group flex flex-col bg-ink-soft/50 border border-ivory/8 p-12 transition-all duration-500 hover:border-gold-champagne/25 lg:p-14"
+              className="group flex flex-col bg-ink-soft/50 border border-ivory/8 p-12 transition-all duration-500 hover:border-gold-champagne/25 hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] lg:p-14"
             >
               <div className="h-px w-12 bg-gold-champagne/40 transition-all duration-500 group-hover:w-16" />
               <h3 className="mt-10 font-serif text-[1.625rem] leading-[1.25] text-ivory lg:text-[1.75rem]">{s.title}</h3>

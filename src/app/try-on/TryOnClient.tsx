@@ -393,12 +393,12 @@ export function TryOnClient() {
               <span className="text-[10px] uppercase tracking-[0.3em] text-ivory/30 mb-1">
                 {photoFileName ?? "Drag & drop or click to upload"}
               </span>
-              <span className="text-[9px] text-ivory/20">JPG · PNG · WEBP · Portrait or upper body</span>
+              <span className="text-[9px] text-ivory/40">JPG · PNG · WEBP · Portrait or upper body</span>
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onFile} className="sr-only" />
             </label>
             {photoUrl && (
               <button type="button" onClick={resetUpload}
-                className="mt-2 text-[9px] uppercase tracking-[0.2em] text-ivory/25 hover:text-ivory/50 transition-colors">
+                className="mt-2 text-[9px] uppercase tracking-[0.2em] text-ivory/40 hover:text-ivory/60 transition-colors">
                 Clear photo
               </button>
             )}
@@ -419,7 +419,7 @@ export function TryOnClient() {
                     className={`text-[9px] uppercase tracking-[0.2em] border px-2 py-1 transition-colors ${
                       debugMode
                         ? "border-yellow-500/60 text-yellow-400"
-                        : "border-ivory/15 text-ivory/25 hover:border-ivory/30 hover:text-ivory/40"
+                        : "border-ivory/15 text-ivory/40 hover:border-ivory/30 hover:text-ivory/60"
                     }`}
                   >
                     Debug
@@ -504,7 +504,7 @@ export function TryOnClient() {
             <p className="text-xs leading-relaxed text-ivory/35">
               AI-generated photorealistic necklace placement — Private Atelier Access only.
             </p>
-            <p className="mt-2 text-[9px] text-ivory/25">
+            <p className="mt-2 text-[9px] text-ivory/40">
               Available for VIP clients and verified purchases.
             </p>
             <Link href="/vip"
@@ -527,9 +527,9 @@ export function TryOnClient() {
           <div className="relative min-h-[520px] border border-ivory/10 bg-ink-soft/20">
             {!photoUrl && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
-                <p className="text-[10px] uppercase tracking-[0.4em] text-ivory/15">Virtual Try-On</p>
-                <p className="font-serif text-2xl text-ivory/10">Upload a photo to begin</p>
-                <p className="text-xs text-ivory/15 max-w-xs">
+                <p className="text-[10px] uppercase tracking-[0.4em] text-ivory/35">Virtual Try-On</p>
+                <p className="font-serif text-2xl text-ivory/30">Upload a photo to begin</p>
+                <p className="text-xs text-ivory/35 max-w-xs">
                   Upload a portrait or upper-body photo — the necklace overlay will appear automatically.
                 </p>
               </div>
@@ -547,7 +547,7 @@ export function TryOnClient() {
             )}
           </div>
 
-          <p className="text-xs text-ivory/20">
+          <p className="text-xs text-ivory/40">
             Virtual Try-On · {NECKLACE.name} · {photoUrl ? "Adjust placement with controls" : "Upload a photo to start"}
           </p>
         </div>

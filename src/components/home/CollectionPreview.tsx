@@ -1,61 +1,59 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-
-const collections = [
-  {
-    name: "Designer Capsules",
-    eyebrow: "Curated Designer Capsule · Selected by Stylix",
-    description:
-      "Independent designer collaborations chosen through the Stylix aesthetic lens — symbolic, considered, and identity-driven. Each capsule is curated for alignment with the Stylix platform, not simply listed.",
-    href: "/collection?tab=designer-capsule",
-    cta: "Explore Designer Capsules",
-    products: [
-      {
-        name: "Gemini Arc Talisman",
-        image: "/products/08bbd545378298049f4ec03b77b783a2.png",
-        href: "/product/gemini-arc-talisman-necklace",
-      },
-      {
-        name: "Constellation Star Station",
-        image: "/products/09fbcf7b14f107b8cef5c9a5690e9f8b.jpg",
-        href: "/product/constellation-star-station-necklace",
-      },
-      {
-        name: "Twin Stone Orbit",
-        image: "/products/a2b9de3f928d061bba0a6f67e36b8be8.png",
-        href: "/product/twin-stone-orbit-necklace",
-      },
-    ],
-    designerNote: {
-      quote:
-        "Jewelry is not only decoration — it is a reflection of personal stories, emotion, and identity.",
-      attribution: "KAI Wang · KK WANG Jewelry · Independent designer collaboration",
-    },
-  },
-  {
-    name: "Celestial Essentials",
-    eyebrow: "Stylix Signature",
-    description:
-      "Stylix signature pieces — symbolic jewelry curated for identity, mood, and occasion. Wearable, considered, and designed to carry meaning beyond the moment.",
-    href: "/collection?tab=celestial-essentials",
-    cta: "Explore Celestial Essentials",
-    products: null,
-  },
-];
+import { useI18n } from "@/lib/i18n/context";
 
 export function CollectionPreview() {
+  const { t } = useI18n();
+  const cp = t.home.collectionPreview;
+
+  const collections = [
+    {
+      name: cp.designerCapsuleName,
+      eyebrow: cp.designerCapsuleEyebrow,
+      description: cp.designerCapsuleDesc,
+      href: "/collection?tab=designer-capsule",
+      cta: cp.designerCapsuleCta,
+      products: [
+        {
+          name: "Gemini Arc Talisman",
+          image: "/products/08bbd545378298049f4ec03b77b783a2.png",
+          href: "/product/gemini-arc-talisman-necklace",
+        },
+        {
+          name: "Constellation Star Station",
+          image: "/products/09fbcf7b14f107b8cef5c9a5690e9f8b.jpg",
+          href: "/product/constellation-star-station-necklace",
+        },
+        {
+          name: "Twin Stone Orbit",
+          image: "/products/a2b9de3f928d061bba0a6f67e36b8be8.png",
+          href: "/product/twin-stone-orbit-necklace",
+        },
+      ],
+      designerNote: {
+        quote: cp.designerQuote,
+        attribution: cp.designerAttribution,
+      },
+    },
+    {
+      name: cp.celestialName,
+      eyebrow: cp.celestialEyebrow,
+      description: cp.celestialDesc,
+      href: "/collection?tab=celestial-essentials",
+      cta: cp.celestialCta,
+      products: null,
+    },
+  ];
+
   return (
     <section className="bg-ink-deep border-t border-ivory/8 py-28 lg:py-36">
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="mb-16">
-          <p className="text-[10px] uppercase tracking-[0.5em] text-gold/70">The Edit</p>
-          <h2 className="mt-6 font-serif text-3xl text-ivory lg:text-4xl">
-            Curated designer capsules and signature pieces
-          </h2>
-          <p className="mt-5 max-w-xl text-sm leading-relaxed text-ivory-dim/70">
-            Designer capsules selected through the Stylix aesthetic lens — alongside Stylix signature
-            pieces curated for identity, mood, and occasion.
-          </p>
+          <p className="text-[10px] uppercase tracking-[0.5em] text-gold/70">{cp.eyebrow}</p>
+          <h2 className="mt-6 font-serif text-3xl text-ivory lg:text-4xl">{cp.title}</h2>
+          <p className="mt-5 max-w-xl text-sm leading-relaxed text-ivory-dim/70">{cp.subtitle}</p>
         </div>
 
         <div className="grid gap-16 lg:gap-24">
@@ -112,17 +110,17 @@ export function CollectionPreview() {
                 <div className="flex items-center justify-center border border-dashed border-ivory/10 aspect-[16/7]">
                   <div className="text-center px-8">
                     <p className="text-[10px] uppercase tracking-[0.4em] text-gold/40 mb-3">
-                      Stylix Signature
+                      {cp.celestialEyebrow}
                     </p>
-                    <p className="font-serif text-xl text-ivory/30">Celestial Essentials</p>
-                    <p className="mt-3 text-xs text-ivory/20 max-w-xs mx-auto">
-                      Symbolic rings and wearable pieces — curated for identity, mood, and occasion.
+                    <p className="font-serif text-xl text-ivory/30">{cp.celestialName}</p>
+                    <p className="mt-3 text-xs text-ivory/40 max-w-xs mx-auto">
+                      {cp.celestialPlaceholderDesc}
                     </p>
                     <Link
                       href={col.href}
                       className="mt-6 inline-flex border border-ivory/10 px-6 py-2.5 text-[9px] uppercase tracking-[0.3em] text-ivory/30 transition-colors hover:border-gold/30 hover:text-gold/60"
                     >
-                      Explore →
+                      {cp.explore}
                     </Link>
                   </div>
                 </div>

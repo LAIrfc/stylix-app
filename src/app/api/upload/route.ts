@@ -10,7 +10,29 @@ const ALLOWED_MIME_TYPES = [
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
+const UPLOAD_RATE_WINDOW_MS = 60_000;
+const UPLOAD_RATE_MAX = 5;
+const uploadBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function isUploadRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const bucket = uploadBuckets.get(ip);
+  if (!bucket || now > bucket.resetAt) {
+    uploadBuckets.set(ip, { count: 1, resetAt: now + UPLOAD_RATE_WINDOW_MS });
+    return false;
+  }
+  bucket.count++;
+  return bucket.count > UPLOAD_RATE_MAX;
+}
+
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (isUploadRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many uploads. Please try again later." },
+      { status: 429 }
+    );
+  }
   try {
     const contentType = req.headers.get("content-type") ?? "";
     if (!contentType.includes("multipart/form-data")) {

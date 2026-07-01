@@ -8,46 +8,11 @@ import { products } from "@/lib/data/products";
 import type { JewelryCategory, CollectionCategory } from "@/lib/types/product";
 import { track } from "@/lib/analytics/tracker";
 import { EVENTS } from "@/lib/analytics/events";
+import { useI18n } from "@/lib/i18n/context";
 
 // ── Collection tabs ──────────────────────────────────────────────────────────
 
 type CollectionTab = "all" | "designer-capsule" | "celestial-essentials" | "ai-concept-archive";
-
-const collectionTabs: {
-  key: CollectionTab;
-  label: string;
-  eyebrow: string;
-  description: string;
-}[] = [
-  {
-    key: "all",
-    label: "All Pieces",
-    eyebrow: "Stylix Edit",
-    description:
-      "The complete Stylix curation — designer capsules, celestial essentials, and concept archive pieces selected through the Stylix aesthetic lens.",
-  },
-  {
-    key: "designer-capsule",
-    label: "Designer Capsules",
-    eyebrow: "Curated Designer Capsule",
-    description:
-      "Independent designer collaborations selected by Stylix. Each capsule is chosen for its alignment with the Stylix aesthetic — symbolic, considered, and identity-driven.",
-  },
-  {
-    key: "celestial-essentials",
-    label: "Celestial Essentials",
-    eyebrow: "Stylix Signature",
-    description:
-      "Stylix signature pieces — symbolic jewelry curated for identity, mood, and occasion. Wearable, considered, and designed to carry meaning.",
-  },
-  {
-    key: "ai-concept-archive",
-    label: "AI Concept Archive",
-    eyebrow: "Concept · Archive · Experimental",
-    description:
-      "Experimental pieces generated through the Stylix AI design process. Concept-stage and archive works — not all are available for purchase. Shown for inspiration and identity exploration.",
-  },
-];
 
 const collectionCategoryMap: Record<CollectionTab, CollectionCategory | null> = {
   all: null,
@@ -66,17 +31,10 @@ const categoryKeys: (JewelryCategory | "all")[] = [
   "earrings",
 ];
 
-const categoryLabels: Record<string, string> = {
-  all: "All",
-  rings: "Rings",
-  necklaces: "Necklaces",
-  bracelets: "Bracelets",
-  earrings: "Earrings",
-};
-
 // ── Product card ──────────────────────────────────────────────────────────────
 
 function CollectionProductCard({ product }: { product: (typeof products)[0] }) {
+  const { t } = useI18n();
   const isArchive = product.tags.collectionCategory === "ai-concept-archive";
   const isDesigner = product.tags.collectionCategory === "designer-capsule";
 
@@ -96,37 +54,37 @@ function CollectionProductCard({ product }: { product: (typeof products)[0] }) {
           {isArchive && (
             <div className="absolute top-3 left-3">
               <span className="bg-stone-900/70 px-2 py-1 text-[8px] uppercase tracking-[0.25em] text-stone-300">
-                Concept Archive
+                {t.collectionPage.badges.conceptArchive}
               </span>
             </div>
           )}
           {isDesigner && product.collaboratorName && (
             <div className="absolute top-3 left-3">
-              <span className="bg-amber-900/80 px-2 py-1 text-[8px] uppercase tracking-[0.25em] text-amber-100">
-                Selected by Stylix
+              <span className="bg-stone-800/80 px-2 py-1 text-[8px] uppercase tracking-[0.25em] text-stone-200">
+                {t.collectionPage.badges.selectedByStylix}
               </span>
             </div>
           )}
         </div>
         <div className="pt-5 pb-8">
           {isDesigner && product.collaboratorName && (
-            <p className="text-[9px] uppercase tracking-[0.3em] text-amber-700/70 mb-1">
-              {product.collaboratorName} · Curated Designer Capsule
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-400 mb-1">
+              {product.collaboratorName} · {t.collectionPage.collaboratorCapsule}
             </p>
           )}
           {!isDesigner && product.zodiacAffinity && product.zodiacAffinity.length > 0 && (
-            <p className="text-[9px] uppercase tracking-[0.3em] text-amber-700/60 mb-2">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-stone-400/80 mb-2">
               {product.zodiacAffinity.slice(0, 3).join(" · ")}
             </p>
           )}
-          <h3 className="font-serif text-lg text-stone-900 group-hover:text-amber-800 transition-colors duration-300">
+          <h3 className="font-serif text-lg text-stone-800 group-hover:text-stone-600 transition-colors duration-300">
             {product.name}
           </h3>
           <p className="mt-1 text-sm text-stone-500">{product.subtitle}</p>
           {isArchive ? (
-            <p className="mt-3 text-xs text-stone-400 italic">Concept piece · Archive</p>
+            <p className="mt-3 text-xs text-stone-400 italic">{t.collectionPage.conceptPieceArchive}</p>
           ) : (
-            <p className="mt-3 text-sm font-medium text-stone-800">
+            <p className="mt-3 text-sm font-medium text-stone-700">
               {product.priceLabel ?? `$${product.price.toLocaleString()}`}
             </p>
           )}
@@ -139,12 +97,21 @@ function CollectionProductCard({ product }: { product: (typeof products)[0] }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function CollectionView() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
+  const tabKeyMap = ["all", "designer-capsule", "celestial-essentials", "ai-concept-archive"] as const;
+  const tabTranslationKey: Record<CollectionTab, keyof typeof t.collectionPage.tabs> = {
+    all: "all",
+    "designer-capsule": "designerCapsule",
+    "celestial-essentials": "celestialEssentials",
+    "ai-concept-archive": "aiConceptArchive",
+  };
+
   const tabParam = (searchParams.get("tab") as CollectionTab) ?? "all";
-  const activeTab: CollectionTab = collectionTabs.some((t) => t.key === tabParam)
+  const activeTab: CollectionTab = tabKeyMap.includes(tabParam as CollectionTab)
     ? tabParam
     : "all";
 
@@ -165,8 +132,6 @@ export function CollectionView() {
     setCat("all");
   }
 
-  const activeCollection = collectionTabs.find((t) => t.key === activeTab)!;
-
   const filtered = useMemo(() => {
     const targetCategory = collectionCategoryMap[activeTab];
     return products.filter((p) => {
@@ -186,13 +151,14 @@ export function CollectionView() {
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <div className="border-b border-stone-200 bg-white py-14">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
-          <p className="text-[10px] uppercase tracking-[0.5em] text-amber-700/70">
-            Stylix · AI Luxury Styling Platform
+          <p className="text-[10px] uppercase tracking-[0.5em] text-stone-400">
+            {t.collectionPage.pageEyebrow}
           </p>
-          <h1 className="mt-4 font-serif text-4xl text-stone-900 sm:text-5xl">Collection</h1>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-500">
-            Curated jewelry for identity, mood, and occasion — designer capsules and signature pieces
-            selected through the Stylix aesthetic lens.
+          <h1 className="mt-4 font-serif text-4xl text-stone-800 sm:text-5xl">
+            {t.collectionPage.pageTitle}
+          </h1>
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-400">
+            {t.collectionPage.pageSubtitle}
           </p>
         </div>
       </div>
@@ -201,18 +167,18 @@ export function CollectionView() {
       <div className="sticky top-16 z-30 border-b border-stone-200 bg-white">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
           <div className="flex gap-0 overflow-x-auto">
-            {collectionTabs.map((tab) => (
+            {tabKeyMap.map((key) => (
               <button
-                key={tab.key}
+                key={key}
                 type="button"
-                onClick={() => setTab(tab.key)}
+                onClick={() => setTab(key)}
                 className={`shrink-0 border-b-2 px-5 py-4 text-[11px] uppercase tracking-[0.2em] transition-colors ${
-                  activeTab === tab.key
+                  activeTab === key
                     ? "border-stone-900 text-stone-900"
                     : "border-transparent text-stone-400 hover:text-stone-600"
                 }`}
               >
-                {tab.label}
+                {t.collectionPage.tabs[tabTranslationKey[key]].label}
               </button>
             ))}
           </div>
@@ -222,19 +188,20 @@ export function CollectionView() {
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10">
         {/* ── Collection description ─────────────────────────────────────── */}
         <div className="mb-10 max-w-2xl">
-          <p className="text-[9px] uppercase tracking-[0.4em] text-amber-700/60 mb-2">
-            {activeCollection.eyebrow}
+          <p className="text-[9px] uppercase tracking-[0.4em] text-stone-400 mb-2">
+            {t.collectionPage.tabs[tabTranslationKey[activeTab]].eyebrow}
           </p>
-          <p className="text-sm leading-relaxed text-stone-500">{activeCollection.description}</p>
+          <p className="text-sm leading-relaxed text-stone-500">
+            {t.collectionPage.tabs[tabTranslationKey[activeTab]].description}
+          </p>
           {activeTab === "designer-capsule" && (
             <p className="mt-3 text-sm leading-relaxed text-stone-400">
-              Independent designer collaboration · Selected by Stylix
+              {t.collectionPage.designerCapsuleNote}
             </p>
           )}
           {activeTab === "ai-concept-archive" && (
             <p className="mt-3 text-sm leading-relaxed text-stone-400">
-              These pieces are experimental and concept-stage. Some are available for bespoke
-              commission through the Private Atelier.
+              {t.collectionPage.archiveNote}
             </p>
           )}
         </div>
@@ -252,18 +219,16 @@ export function CollectionView() {
                   : "border-stone-200 text-stone-500 hover:border-stone-400 hover:text-stone-700"
               }`}
             >
-              {categoryLabels[key] ?? key}
+              {t.collection.categoryLabels[key] ?? key}
             </button>
           ))}
         </div>
 
         {/* ── Count ────────────────────────────────────────────────── */}
         <p className="mb-8 text-xs text-stone-400 uppercase tracking-[0.2em]">
-          {filtered.length} {filtered.length === 1 ? "piece" : "pieces"}
+          {filtered.length} {filtered.length === 1 ? t.collection.piece : t.collection.pieces}
           {activeTab === "all" && (
-            <span className="ml-2 text-stone-300">
-              · AI Concept Archive pieces shown in full under the Archive tab
-            </span>
+            <span className="ml-2 text-stone-300">{t.collectionPage.allTabArchiveHint}</span>
           )}
         </p>
 
@@ -276,10 +241,8 @@ export function CollectionView() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center border border-dashed border-stone-200 py-20 text-center">
-            <p className="font-serif text-2xl text-stone-300">No pieces in this category</p>
-            <p className="mt-3 text-sm text-stone-400">
-              Our atelier is building this collection — return soon.
-            </p>
+            <p className="font-serif text-2xl text-stone-300">{t.collectionPage.emptyTitle}</p>
+            <p className="mt-3 text-sm text-stone-400">{t.collectionPage.emptyBody}</p>
           </div>
         )}
 
@@ -287,17 +250,17 @@ export function CollectionView() {
         {activeTab === "all" && (
           <div className="mt-16 border-t border-stone-100 pt-12 text-center">
             <p className="text-[9px] uppercase tracking-[0.4em] text-stone-400 mb-3">
-              AI Concept Archive
+              {t.collectionPage.archiveCta.eyebrow}
             </p>
             <p className="text-sm text-stone-500 max-w-md mx-auto">
-              Experimental and concept-stage pieces generated through the Stylix AI design process.
+              {t.collectionPage.archiveCta.description}
             </p>
             <button
               type="button"
               onClick={() => setTab("ai-concept-archive")}
               className="mt-6 border border-stone-300 px-8 py-3 text-[10px] uppercase tracking-[0.3em] text-stone-600 transition-colors hover:border-stone-900 hover:text-stone-900"
             >
-              Explore Concept Archive →
+              {t.collectionPage.archiveCta.button}
             </button>
           </div>
         )}

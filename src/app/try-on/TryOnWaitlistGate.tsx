@@ -110,7 +110,7 @@ export function TryOnWaitlistGate() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
-              className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/25 focus:border-gold/60 focus:outline-none"
+              className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/40 focus:border-gold/60 focus:outline-none"
             />
           </label>
 
@@ -121,7 +121,7 @@ export function TryOnWaitlistGate() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Your name"
-              className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/25 focus:border-gold/60 focus:outline-none"
+              className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/40 focus:border-gold/60 focus:outline-none"
             />
           </label>
 
@@ -133,7 +133,7 @@ export function TryOnWaitlistGate() {
               value={country}
               onChange={(event) => setCountry(event.target.value)}
               placeholder="United States"
-              className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/25 focus:border-gold/60 focus:outline-none"
+              className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/40 focus:border-gold/60 focus:outline-none"
             />
           </label>
 
@@ -163,7 +163,7 @@ export function TryOnWaitlistGate() {
               value={source}
               onChange={(event) => setSource(event.target.value)}
               placeholder="Virtual Try-On"
-              className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/25 focus:border-gold/60 focus:outline-none"
+              className="mt-3 w-full border-b border-ivory/15 bg-transparent py-3 text-sm text-ivory placeholder:text-ivory/40 focus:border-gold/60 focus:outline-none"
             />
           </label>
         </div>

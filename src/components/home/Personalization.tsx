@@ -1,23 +1,26 @@
+"use client";
+
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ButtonLink } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n/context";
 
 export function Personalization() {
+  const { t } = useI18n();
+
   return (
     <section className="border-t border-ivory/10 py-20 lg:py-28">
       <div className="mx-auto max-w-3xl px-6 text-center lg:px-10">
         <SectionHeading
           align="center"
-          eyebrow="Bespoke"
-          title="Personalized customization"
+          eyebrow={t.home.personalization.eyebrow}
+          title={t.home.personalization.title}
         />
         <p className="mx-auto mt-8 max-w-2xl text-sm leading-relaxed text-ivory-dim">
-          Beyond the edit, our atelier listens. Custom design translates your story into metal and
-          stone — heirloom logic with contemporary silhouette. From remounting heritage gems to
-          sketching an entirely new form, the process is guided, discreet, and uncompromising.
+          {t.home.personalization.body}
         </p>
         <div className="mt-10 flex justify-center">
           <ButtonLink href="/vip" variant="outline">
-            Request a consultation
+            {t.home.personalization.cta}
           </ButtonLink>
         </div>
       </div>

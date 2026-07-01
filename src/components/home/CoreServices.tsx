@@ -74,7 +74,7 @@ export function CoreServices() {
           {cards.map(({ key, title, desc, Icon }) => (
             <article
               key={key}
-              className="group relative flex flex-col bg-ivory p-10 transition-all duration-500 lg:p-12"
+              className="group relative flex flex-col bg-ivory p-10 transition-all duration-500 lg:p-12 hover:shadow-[0_8px_40px_rgba(0,0,0,0.08)] hover:-translate-y-0.5"
             >
               <div className="mb-8 flex h-14 w-14 items-center justify-center text-gold-muted transition-colors duration-500 group-hover:text-gold">
                 <Icon className="h-9 w-9" />
