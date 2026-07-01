@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useCart } from "@/lib/cart/CartContext";
@@ -10,13 +10,19 @@ import { useCart } from "@/lib/cart/CartContext";
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [tryOnOpen, setTryOnOpen] = useState(false);
+  const tryOnTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useI18n();
   const { itemCount } = useCart();
+
+  const tryOnItems = [
+    { href: "/try-on", label: "AR Virtual Try-On" },
+    { href: "/identity-portrait", label: "Identity Portrait" },
+  ];
 
   const nav = [
     { href: "/collection", label: t.nav.collection },
     { href: "/advisor", label: t.nav.advisor },
-    { href: "/try-on", label: t.nav.tryOn },
     { href: "/collection?tab=designer-capsule", label: t.nav.designerCapsule },
     { href: "/vip", label: t.nav.vip },
   ];
@@ -31,7 +37,60 @@ export function SiteHeader() {
           Stylix
         </Link>
         <nav className="hidden items-center gap-10 md:flex">
-          {nav.map((item) => (
+          {nav.slice(0, 2).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`text-[11px] uppercase tracking-[0.22em] transition-colors hover:text-gold ${
+                pathname === item.href ? "text-gold" : "text-ivory-dim"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          {/* Try-On dropdown */}
+          <div
+            className="relative"
+            onMouseEnter={() => {
+              if (tryOnTimeout.current) clearTimeout(tryOnTimeout.current);
+              setTryOnOpen(true);
+            }}
+            onMouseLeave={() => {
+              tryOnTimeout.current = setTimeout(() => setTryOnOpen(false), 150);
+            }}
+          >
+            <button
+              type="button"
+              className={`text-[11px] uppercase tracking-[0.22em] transition-colors hover:text-gold ${
+                pathname === "/try-on" || pathname === "/identity-portrait"
+                  ? "text-gold"
+                  : "text-ivory-dim"
+              }`}
+            >
+              {t.nav.tryOn}
+            </button>
+            {tryOnOpen && (
+              <div className="absolute left-1/2 top-full -translate-x-1/2 pt-3 z-50">
+                <div className="border border-ivory/10 bg-ink-deep/95 backdrop-blur-md rounded-lg py-2 min-w-[180px] shadow-luxury">
+                  {tryOnItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setTryOnOpen(false)}
+                      className={`block px-5 py-2.5 text-[11px] uppercase tracking-[0.15em] transition-colors hover:text-gold hover:bg-gold/5 ${
+                        pathname === item.href ? "text-gold" : "text-ivory-dim"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {nav.slice(2).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -97,6 +156,19 @@ export function SiteHeader() {
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className="text-sm uppercase tracking-widest text-ivory-soft"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <p className="text-[9px] uppercase tracking-[0.3em] text-ivory/30 mt-2">
+              {t.nav.tryOn}
+            </p>
+            {tryOnItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className="text-sm uppercase tracking-widest text-ivory-soft pl-4"
               >
                 {item.label}
               </Link>
