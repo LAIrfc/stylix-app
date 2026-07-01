@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n/context";
 import {
   IDENTITIES,
   MOODS,
@@ -15,6 +16,9 @@ import { getJewelryForIdentity, type JewelryItem } from "@/lib/data/jewelry-item
 type Step = "upload" | "identity" | "quiz" | "jewelry" | "mood" | "generating" | "result";
 
 export function IdentityPortraitClient() {
+  const { locale, t } = useI18n();
+  const ip = t.identityPortrait;
+  const isCn = locale === "zh";
   const [step, setStep] = useState<Step>("upload");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -190,19 +194,19 @@ export function IdentityPortraitClient() {
   // ─── Step indicator ────────────────────────────────────────────────────────
 
   const STEPS: { key: Step; label: string }[] = [
-    { key: "upload", label: "上传" },
-    { key: "identity", label: "人格" },
-    { key: "jewelry", label: "珠宝" },
-    { key: "mood", label: "氛围" },
+    { key: "upload", label: ip.stepUpload },
+    { key: "identity", label: ip.stepIdentity },
+    { key: "jewelry", label: ip.stepJewelry },
+    { key: "mood", label: ip.stepMood },
   ];
 
   const currentStepIndex = STEPS.findIndex((s) => s.key === step);
 
   const GENERATION_PHASES = [
-    "感知你的珠宝气场...",
-    "匹配人格特质...",
-    "挑选灵魂宝石...",
-    "生成专属肖像...",
+    ip.genPhase1,
+    ip.genPhase2,
+    ip.genPhase3,
+    ip.genPhase4,
   ];
 
   // ─── Navigation helper ─────────────────────────────────────────────────────
@@ -254,12 +258,10 @@ export function IdentityPortraitClient() {
         <div className="min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-6 animate-fade-up">
           <div className="max-w-lg w-full text-center space-y-8">
             <h1 className="font-serif text-4xl md:text-5xl text-ivory leading-tight">
-              发现你的珠宝人格
+              {ip.pageTitle}
             </h1>
-            <p className="text-ivory/50 text-lg leading-relaxed">
-              上传一张照片
-              <br />
-              看看珠宝如何定义你
+            <p className="text-ivory/50 text-lg leading-relaxed whitespace-pre-line">
+              {ip.pageSubtitle}
             </p>
 
             <div
@@ -277,7 +279,7 @@ export function IdentityPortraitClient() {
                   </svg>
                 </div>
                 <p className="text-[11px] uppercase tracking-[0.3em] text-ivory/40 group-hover:text-ivory/60 transition-colors">
-                  上传照片
+                  {ip.uploadPhoto}
                 </p>
                 <p className="text-xs text-ivory/20">JPG, PNG, WEBP</p>
               </div>
@@ -300,10 +302,10 @@ export function IdentityPortraitClient() {
           <div className="max-w-4xl w-full space-y-8">
             <div className="text-center space-y-3">
               <h2 className="font-serif text-3xl md:text-4xl text-ivory">
-                选择你的珠宝人格
+                {ip.chooseIdentity}
               </h2>
               <p className="text-ivory/40 text-sm">
-                今天想成为谁？
+                {ip.chooseIdentitySubtitle}
               </p>
             </div>
 
@@ -315,7 +317,7 @@ export function IdentityPortraitClient() {
                   transition-all duration-300 text-sm"
               >
                 <span className="text-lg">&#10024;</span>
-                随机惊喜
+                {ip.surpriseMe}
               </button>
               <button
                 onClick={() => setStep("quiz" as Step)}
@@ -324,7 +326,7 @@ export function IdentityPortraitClient() {
                   transition-all duration-300 text-sm"
               >
                 <span className="text-lg">&#128300;</span>
-                测测最适合你的人格
+                {ip.quizButton}
               </button>
             </div>
 
@@ -339,13 +341,13 @@ export function IdentityPortraitClient() {
                 >
                   <div className="text-2xl mb-2">{identity.icon}</div>
                   <p className="font-serif text-sm text-ivory group-hover:text-gold transition-colors">
-                    {identity.nameCn}
+                    {isCn ? identity.nameCn : identity.nameEn}
                   </p>
                   <p className="text-[10px] text-ivory/40 mt-1">
-                    {identity.nicknameCn}
+                    {isCn ? identity.nicknameCn : identity.nickname}
                   </p>
                   <p className="text-[9px] text-ivory/25 mt-1">
-                    {identity.keywordsCn.join(" · ")}
+                    {(isCn ? identity.keywordsCn : identity.keywords).join(" · ")}
                   </p>
                 </button>
               ))}
@@ -354,7 +356,7 @@ export function IdentityPortraitClient() {
             {/* Back */}
             <div className="text-center pt-2">
               <button onClick={goBack} className="text-ivory/25 text-xs hover:text-ivory/50 transition-colors">
-                &larr; 返回
+                &larr; {ip.back}
               </button>
             </div>
           </div>
@@ -366,22 +368,22 @@ export function IdentityPortraitClient() {
         <div className="min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-6 py-20 animate-fade-up">
           <div className="max-w-2xl w-full space-y-8 text-center">
             <h2 className="font-serif text-3xl md:text-4xl text-ivory">
-              珠宝人格测试
+              {ip.quizTitle}
             </h2>
             <p className="text-ivory/40 text-sm leading-relaxed">
-              回答几道直觉题，找到最适合你的珠宝人格
+              {ip.quizSubtitle}
             </p>
 
             <div className="py-12 border border-ivory/10 rounded-2xl bg-ink-soft/30">
-              <p className="text-ivory/30 text-sm">测试题目即将上线...</p>
-              <p className="text-ivory/20 text-xs mt-2">敬请期待</p>
+              <p className="text-ivory/30 text-sm">{ip.quizComingSoon}</p>
+              <p className="text-ivory/20 text-xs mt-2">{ip.quizComingSoonSub}</p>
             </div>
 
             <button
               onClick={() => setStep("identity")}
               className="text-ivory/25 text-xs hover:text-ivory/50 transition-colors"
             >
-              &larr; 返回选择人格
+              &larr; {ip.quizBack}
             </button>
           </div>
         </div>
@@ -399,10 +401,10 @@ export function IdentityPortraitClient() {
                 {selectedIdentity.icon} {selectedIdentity.nameEn}
               </p>
               <h2 className="font-serif text-3xl md:text-4xl text-ivory">
-                选择珠宝
+                {ip.chooseJewelry}
               </h2>
               <p className="text-ivory/40 text-sm">
-                挑一件打动你的
+                {ip.chooseJewelrySubtitle}
               </p>
             </div>
 
@@ -427,10 +429,10 @@ export function IdentityPortraitClient() {
                   </div>
                   <div className="p-4">
                     <p className="text-sm text-ivory group-hover:text-gold transition-colors">
-                      {jewelry.name}
+                      {isCn ? jewelry.nameCn : jewelry.name}
                     </p>
                     <p className="text-[10px] text-ivory/30 mt-1">
-                      {jewelry.nameCn}
+                      {isCn ? jewelry.name : jewelry.nameCn}
                     </p>
                   </div>
                 </button>
@@ -440,13 +442,13 @@ export function IdentityPortraitClient() {
             {/* Skip + Back */}
             <div className="flex items-center justify-between pt-2">
               <button onClick={goBack} className="text-ivory/25 text-xs hover:text-ivory/50 transition-colors">
-                &larr; 返回
+                &larr; {ip.back}
               </button>
               <button
                 onClick={handleSkipJewelry}
                 className="text-ivory/30 text-xs hover:text-ivory/50 transition-colors"
               >
-                跳过 &rarr;
+                {ip.skip} &rarr;
               </button>
             </div>
           </div>
@@ -466,7 +468,7 @@ export function IdentityPortraitClient() {
                 {selectedJewelry && ` \u00b7 ${selectedJewelry.name}`}
               </p>
               <h2 className="font-serif text-3xl md:text-4xl text-ivory">
-                今天的氛围
+                {ip.chooseMood}
               </h2>
             </div>
 
@@ -489,7 +491,7 @@ export function IdentityPortraitClient() {
 
             <div className="text-center pt-2">
               <button onClick={goBack} className="text-ivory/25 text-xs hover:text-ivory/50 transition-colors">
-                &larr; 返回
+                &larr; {ip.back}
               </button>
             </div>
           </div>
@@ -550,7 +552,7 @@ export function IdentityPortraitClient() {
                   />
                 ) : (
                   <div className="w-full aspect-square flex items-center justify-center">
-                    <p className="text-ivory/20 text-sm">生成不可用</p>
+                    <p className="text-ivory/20 text-sm">{ip.resultUnavailable}</p>
                   </div>
                 )}
               </div>
@@ -560,13 +562,15 @@ export function IdentityPortraitClient() {
                 {/* Header: name + code */}
                 <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.4em] text-ivory/30">
-                    珠宝人格
+                    {ip.resultLabel}
                   </p>
                   <div className="flex items-center gap-3">
                     <span className="text-4xl">{selectedIdentity.icon}</span>
                     <div>
                       <h2 className="font-serif text-2xl text-ivory">
-                        {selectedIdentity.nameCn} · {selectedIdentity.nameEn}
+                        {isCn
+                          ? `${selectedIdentity.nameCn} · ${selectedIdentity.nameEn}`
+                          : selectedIdentity.nameEn}
                       </h2>
                       <p className="text-gold font-mono text-sm mt-0.5">
                         {selectedIdentity.code}
@@ -574,18 +578,18 @@ export function IdentityPortraitClient() {
                     </div>
                   </div>
                   <p className="text-ivory/50 text-sm">
-                    {selectedIdentity.labelCn}
+                    {isCn ? selectedIdentity.labelCn : selectedIdentity.labelEn}
                   </p>
                 </div>
 
                 {/* Nickname */}
                 <div className="inline-block px-3 py-1 rounded-full bg-gold/10 border border-gold/20">
-                  <span className="text-gold text-xs">{selectedIdentity.nicknameCn}</span>
+                  <span className="text-gold text-xs">{isCn ? selectedIdentity.nicknameCn : selectedIdentity.nickname}</span>
                 </div>
 
                 {/* Keywords pill */}
                 <div className="flex gap-2 flex-wrap">
-                  {selectedIdentity.keywordsCn.map((kw) => (
+                  {(isCn ? selectedIdentity.keywordsCn : selectedIdentity.keywords).map((kw) => (
                     <span
                       key={kw}
                       className="px-3 py-1 rounded-full border border-ivory/10 text-ivory/60 text-xs"
@@ -598,7 +602,7 @@ export function IdentityPortraitClient() {
                 {/* 别人眼里的你 */}
                 <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-gold/60">
-                    别人眼里的你
+                    {ip.othersViewLabel}
                   </p>
                   <p className="text-ivory/60 text-sm leading-relaxed">
                     {selectedIdentity.othersView}
@@ -608,7 +612,7 @@ export function IdentityPortraitClient() {
                 {/* 你的另一面 */}
                 <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-ivory/40">
-                    你的另一面
+                    {ip.shadowTraitLabel}
                   </p>
                   <p className="text-ivory/45 text-sm leading-relaxed">
                     {selectedIdentity.shadowTrait}
@@ -642,8 +646,8 @@ export function IdentityPortraitClient() {
                       />
                     </div>
                     <div>
-                      <p className="text-ivory text-sm">{selectedJewelry.nameCn}</p>
-                      <p className="text-ivory/30 text-[10px]">{selectedJewelry.name}</p>
+                      <p className="text-ivory text-sm">{isCn ? selectedJewelry.nameCn : selectedJewelry.name}</p>
+                      <p className="text-ivory/30 text-[10px]">{isCn ? selectedJewelry.name : selectedJewelry.nameCn}</p>
                     </div>
                   </div>
                 )}
@@ -655,14 +659,14 @@ export function IdentityPortraitClient() {
                     className="px-6 py-3 border border-gold/30 text-gold text-xs
                       uppercase tracking-[0.2em] rounded-full hover:bg-gold/10 transition-all"
                   >
-                    下载身份卡
+                    {ip.downloadCard}
                   </button>
                   <button
                     onClick={handleReset}
                     className="px-6 py-3 border border-ivory/15 text-ivory/50 text-xs
                       uppercase tracking-[0.2em] rounded-full hover:border-ivory/30 transition-all"
                   >
-                    重新生成
+                    {ip.regenerate}
                   </button>
                 </div>
               </div>
@@ -671,7 +675,7 @@ export function IdentityPortraitClient() {
             {/* You may also like */}
             <div className="mt-16 space-y-6">
               <p className="text-[10px] uppercase tracking-[0.4em] text-ivory/30 text-center">
-                你可能还是
+                {ip.youMayAlsoLike}
               </p>
               <div className="flex justify-center gap-4 flex-wrap">
                 {getSimilarIdentities(selectedIdentity.id, 3).map((similar) => (
@@ -682,9 +686,9 @@ export function IdentityPortraitClient() {
                       hover:border-gold/30 transition-all duration-300 text-center"
                   >
                     <div className="text-2xl mb-2">{similar.icon}</div>
-                    <p className="font-serif text-ivory text-sm">{similar.nameCn}</p>
+                    <p className="font-serif text-ivory text-sm">{isCn ? similar.nameCn : similar.nameEn}</p>
                     <p className="text-ivory/30 text-[10px] mt-1">
-                      {similar.keywordsCn.join(" · ")}
+                      {(isCn ? similar.keywordsCn : similar.keywords).join(" · ")}
                     </p>
                   </button>
                 ))}

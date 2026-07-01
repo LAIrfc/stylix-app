@@ -2,11 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/context";
 
 const PANELS = [
   {
-    label: "AI Stylist",
-    sub: "Identity-based curation",
+    key: "aiStylist",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
         <path d="M12 3l1.8 5.5H19l-4.6 3.3 1.8 5.5L12 14l-4.2 3.3 1.8-5.5L5 8.5h5.2L12 3z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
@@ -17,8 +17,7 @@ const PANELS = [
     floatClass: "animate-float-a",
   },
   {
-    label: "Digital Atelier",
-    sub: "Private styling sessions",
+    key: "digitalAtelier",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
         <rect x="3" y="6" width="18" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
@@ -31,8 +30,7 @@ const PANELS = [
     floatClass: "animate-float-b",
   },
   {
-    label: "3D Try-On",
-    sub: "Preview before you commit",
+    key: "tryOn3d",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
         <path d="M12 3L21 8.5V15.5L12 21L3 15.5V8.5L12 3Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
@@ -44,8 +42,7 @@ const PANELS = [
     floatClass: "animate-float-c",
   },
   {
-    label: "Discover Jewelry",
-    sub: "Curated designer capsules",
+    key: "discoverJewelry",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
         <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.2" />
@@ -60,6 +57,7 @@ const PANELS = [
 ];
 
 export function Hero() {
+  const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -138,7 +136,7 @@ export function Hero() {
         {/* Floating glass panels */}
         {PANELS.map((p, i) => (
           <div
-            key={p.label}
+            key={p.key}
             className={`absolute hidden sm:flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 backdrop-blur-md ${p.position} ${p.floatClass} panel-in`}
             style={{
               background: "rgba(255,255,255,0.05)",
@@ -154,8 +152,8 @@ export function Hero() {
               {p.icon}
             </div>
             <div>
-              <p className="text-[11px] font-medium text-white/90 leading-tight">{p.label}</p>
-              <p className="mt-0.5 text-[9px] uppercase tracking-[0.3em] text-white/35">{p.sub}</p>
+              <p className="text-[11px] font-medium text-white/90 leading-tight">{t.home.panels[p.key as keyof typeof t.home.panels].label}</p>
+              <p className="mt-0.5 text-[9px] uppercase tracking-[0.3em] text-white/35">{t.home.panels[p.key as keyof typeof t.home.panels].sub}</p>
             </div>
           </div>
         ))}
@@ -166,24 +164,23 @@ export function Hero() {
             className="hero-fade-up text-[10px] uppercase tracking-[0.55em] text-gold/70"
             style={{ animationDelay: "0.1s" }}
           >
-            Stylix — AI Luxury Styling
+            {t.home.heroEyebrow}
           </p>
 
           <h1
             className="hero-fade-up mt-6 font-serif text-[2.6rem] leading-[1.08] text-white sm:text-[3.5rem] lg:text-[4.75rem] xl:text-[5.5rem]"
             style={{ animationDelay: "0.25s", textShadow: "0 2px 40px rgba(0,0,0,0.6)" }}
           >
-            Your Personal
+            {t.home.heroTitleLine1}
             <br />
-            AI Stylist
+            {t.home.heroTitleLine2}
           </h1>
 
           <p
             className="hero-fade-up mt-6 max-w-md text-[0.9375rem] leading-[1.8] text-white/55 sm:text-base"
             style={{ animationDelay: "0.45s" }}
           >
-            Discover jewelry that matches your identity,
-            style, and occasion.
+            {t.home.heroSubtitle}
           </p>
 
           <div
@@ -194,13 +191,13 @@ export function Hero() {
               href="/advisor"
               className="inline-flex items-center justify-center px-9 py-4 text-[11px] uppercase tracking-[0.25em] font-medium bg-white text-black transition-all duration-500 hover:bg-white/90"
             >
-              Try AI Stylist
+              {t.home.heroCta1}
             </Link>
             <Link
               href="/collection"
               className="inline-flex items-center justify-center px-9 py-4 text-[11px] uppercase tracking-[0.25em] font-medium border border-white/30 text-white transition-all duration-500 hover:bg-white/10"
             >
-              Explore Collection
+              {t.home.heroCta2}
             </Link>
           </div>
         </div>

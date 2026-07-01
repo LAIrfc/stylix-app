@@ -16,8 +16,8 @@ export function SiteHeader() {
   const { itemCount } = useCart();
 
   const tryOnItems = [
-    { href: "/try-on", label: "AR Virtual Try-On" },
-    { href: "/identity-portrait", label: "Identity Portrait" },
+    { href: "/try-on", label: t.nav.arTryOn },
+    { href: "/identity-portrait", label: t.nav.identityPortrait },
   ];
 
   const nav = [
@@ -178,7 +178,7 @@ export function SiteHeader() {
               onClick={() => setOpen(false)}
               className="text-sm uppercase tracking-widest text-ivory-soft"
             >
-              Bag {itemCount > 0 && `(${itemCount})`}
+              {t.nav.bag} {itemCount > 0 && `(${itemCount})`}
             </Link>
             <div className="pt-2">
               <LanguageSwitcher />
