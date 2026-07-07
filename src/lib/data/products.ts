@@ -46,9 +46,9 @@ export const products: Product[] = [
     material: "18k gold, satin finish",
     price: 285,
     priceLabel: "From $285",
-    coverImage: "/products/40c1e0d0037513853c4c4ecfcb953e79.jpg",
+    coverImage: "/products/gold-ring.jpg",
     gallery: [
-      { imageUrl: "/products/40c1e0d0037513853c4c4ecfcb953e79.jpg", alt: "Helios Solar Band" },
+      { imageUrl: "/products/gold-ring.jpg", alt: "Helios Solar Band" },
     ],
     description: "Bold geometry softened by hand-finished edges and a weight that feels intentional.",
     narrative:
